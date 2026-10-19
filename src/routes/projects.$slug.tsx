@@ -11,18 +11,20 @@ import {
   X,
 } from "lucide-react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import logo from "@/assets/logo.png.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
 import { ShowcaseFooter, ShowcaseHeader } from "@/components/showcase";
 import type { Language, SectionId } from "@/components/showcase/types";
 import { projectCategories, projects, type CaseStudyProject } from "@/lib/projects";
 import { projectItemsFromConfig, useCMS } from "@/lib/cms";
 import { absoluteSiteAsset, canonicalUrl } from "@/lib/seo";
-import { translate } from "@/components/showcase/types";
+import { loadSiteConfig } from "@/lib/cms-loader";
+import { usePageTranslate } from "@/lib/cms";
 
 export const Route = createFileRoute("/projects/$slug")({
-  loader: ({ params }) => {
-    const project = projects.find((item) => item.slug === params.slug);
+  loader: async ({ params }) => {
+    const config = await loadSiteConfig();
+    const project = projectItemsFromConfig(config.portfolio).find(
+      (item) => item.slug === params.slug,
+    );
     return { slug: params.slug, project: project?.kind === "case-study" ? project : null };
   },
   head: ({ loaderData }) => {
@@ -100,7 +102,7 @@ function ProjectDetailPage() {
   const socialPerformanceRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
   const projectName = project.localizedName?.[language] ?? project.name;
   const visibleCategoryId =
     project.category === "platforms-apps"
@@ -488,7 +490,6 @@ function ProjectDetailPage() {
       </main>
       <ShowcaseFooter
         language={language}
-        logo={darkMode ? whiteLogo.url : logo.url}
         onBackToTop={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       />
       <dialog

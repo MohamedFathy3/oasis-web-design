@@ -12,52 +12,59 @@ import {
   ShowcaseServices,
 } from "@/components/showcase";
 import type { Language, SectionId } from "@/components/showcase/types";
+import { loadSiteConfig } from "@/lib/cms-loader";
 import { useCMS } from "@/lib/cms";
 import { absoluteSiteAsset, canonicalUrl } from "@/lib/seo";
-import logo from "@/assets/logo.png.asset.json";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    const config = await loadSiteConfig();
+    return { seo: config.pageMeta["home"], brand: config.brand };
+  },
   component: Index,
-  head: () => ({
-    links: [{ rel: "canonical", href: canonicalUrl("/") }],
-    meta: [
-      { title: "شركة تصميم مواقع وتسويق إلكتروني | Viral Zoom" },
-      {
-        name: "description",
-        content:
-          "نصمم مواقع ومتاجر إلكترونية ونقدم حلول التسويق الرقمي وتطوير البرمجيات لمساعدة الشركات على النمو. Viral Zoom — فايرال زوم.",
-      },
-      { property: "og:title", content: "شركة تصميم مواقع وتسويق إلكتروني | Viral Zoom" },
-      {
-        property: "og:description",
-        content:
-          "نصمم مواقع ومتاجر إلكترونية ونقدم حلول التسويق الرقمي وتطوير البرمجيات لمساعدة الشركات على النمو.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: canonicalUrl("/") },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "شركة تصميم مواقع وتسويق إلكتروني | Viral Zoom" },
-      {
-        name: "twitter:description",
-        content: "تصميم مواقع ومتاجر إلكترونية، تسويق رقمي، وتطوير برمجيات لنمو أعمالك.",
-      },
-      { name: "twitter:image", content: absoluteSiteAsset(logo.url) },
-    ],
-    scripts: [
-      {
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          name: "Viral Zoom",
-          url: canonicalUrl("/"),
-          email: "info@viralzoom.com",
-          logo: logo.url,
-          description: "شركة تصميم مواقع وتسويق إلكتروني وتطوير برمجيات.",
-        }),
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = loaderData?.seo;
+    const siteBrand = loaderData?.brand;
+    const siteUrl = canonicalUrl("/");
+    return {
+      links: [{ rel: "canonical", href: siteUrl }],
+      meta: [
+        { title: seo ? `${seo.title.en} | ${seo.title.ar}` : "" },
+        {
+          name: "description",
+          content: seo ? `${seo.description.en} ${seo.description.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        {
+          property: "og:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: siteUrl },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        {
+          name: "twitter:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+        { name: "twitter:image", content: absoluteSiteAsset(siteBrand?.logo ?? "") },
+      ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: siteBrand?.name ?? "",
+            url: siteUrl,
+            email: "info@viralzoom.com",
+            logo: absoluteSiteAsset(siteBrand?.logo ?? ""),
+            description: seo ? `${seo.description.en} ${seo.description.ar}`.slice(0, 300) : "",
+          }),
+        },
+      ],
+    };
+  },
 });
 
 function Index() {
@@ -147,11 +154,7 @@ function Index() {
         {ready && config.sections.banner && <ShowcaseBanner language={language} />}
         {ready && config.sections.contact && <ShowcaseContact language={language} />}
       </main>
-      <ShowcaseFooter
-        language={language}
-        logo={darkMode ? config.brand.whiteLogo : config.brand.logo}
-        onBackToTop={() => goTo("home")}
-      />
+      <ShowcaseFooter language={language} onBackToTop={() => goTo("home")} />
     </div>
   );
 }

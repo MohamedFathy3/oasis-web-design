@@ -53,7 +53,7 @@ export const Route = createFileRoute("/admin")({
 });
 const ADMIN_EMAIL = "admin@admin.com";
 type Lang = "en" | "ar";
-type Section = "overview" | "home" | "services" | "portfolio" | "clients" | "settings";
+type Section = "overview" | "home" | "pages" | "services" | "portfolio" | "clients" | "settings";
 const labels: Record<
   Lang,
   Record<
@@ -140,6 +140,7 @@ const labels: Record<
   en: {
     overview: "Overview",
     home: "Homepage",
+    pages: "Page copy",
     services: "Services",
     portfolio: "Portfolio",
     clients: "Clients",
@@ -223,6 +224,7 @@ const labels: Record<
   ar: {
     overview: "نظرة عامة",
     home: "الرئيسية",
+    pages: "نصوص الصفحات",
     services: "الخدمات",
     portfolio: "الأعمال",
     clients: "العملاء",
@@ -307,6 +309,7 @@ const labels: Record<
 const menuItems: { id: Section; icon: typeof LayoutDashboard }[] = [
   { id: "overview", icon: LayoutDashboard },
   { id: "home", icon: Monitor },
+  { id: "pages", icon: FileText },
   { id: "services", icon: Sparkles },
   { id: "portfolio", icon: ImagePlus },
   { id: "clients", icon: Users },
@@ -1461,6 +1464,110 @@ function AdminPage() {
               <h2>{draft.hero.title.ar}</h2>
               <p>{draft.hero.subtitle.ar}</p>
             </div>
+          </div>
+        </div>
+      </>
+    );
+  else if (section === "pages")
+    body = (
+      <>
+        <PageIntro
+          eyebrow="02 / ALL PAGE COPY"
+          title={t.pages}
+          desc={
+            lang === "ar"
+              ? "عدّل النصوص الثنائية اللغة المستخدمة في جميع صفحات الموقع. تُحمّل من قاعدة البيانات على الخادم."
+              : "Edit bilingual copy used throughout public pages. Published values are served from the database."
+          }
+        />
+        <div className="vz-panel">
+          <PanelTitle
+            icon={<FileText />}
+            title={t.pages}
+            detail={`${Object.keys(draft.pageCopy).length} ${t.items}`}
+          />
+          <div className="vz-form-stack">
+            {Object.entries(draft.pageCopy)
+              .filter(
+                ([key, value]) =>
+                  !search ||
+                  `${key} ${value.en} ${value.ar}`.toLowerCase().includes(search.toLowerCase()),
+              )
+              .map(([key, value]) => (
+                <div className="vz-page-copy-row" key={key}>
+                  <small className="vz-page-copy-key">{key}</small>
+                  {bilingualFields(
+                    key,
+                    value,
+                    (next) => update("pageCopy", { ...draft.pageCopy, [key]: next }),
+                    true,
+                  )}
+                </div>
+              ))}
+          </div>
+          <div className="vz-form-stack" style={{ marginTop: 24 }}>
+            <PanelTitle
+              icon={<Globe2 />}
+              title={lang === "ar" ? "عناوين SEO لكل صفحة" : "SEO metadata by page"}
+              detail={
+                lang === "ar"
+                  ? "العنوان والوصف وبيانات المشاركة الاجتماعية"
+                  : "Search title, description and social preview copy"
+              }
+            />
+            {Object.entries(draft.pageMeta).map(([page, seo]) => (
+              <div className="vz-page-copy-row" key={page}>
+                <small className="vz-page-copy-key">{page}</small>
+                {bilingualFields(lang === "ar" ? "عنوان الصفحة" : "Page title", seo.title, (next) =>
+                  update("pageMeta", { ...draft.pageMeta, [page]: { ...seo, title: next } }),
+                )}
+                {bilingualFields(
+                  lang === "ar" ? "الوصف" : "Description",
+                  seo.description,
+                  (next) =>
+                    update("pageMeta", {
+                      ...draft.pageMeta,
+                      [page]: { ...seo, description: next },
+                    }),
+                  true,
+                )}
+                {bilingualFields(
+                  lang === "ar" ? "عنوان المشاركة" : "Social title",
+                  seo.ogTitle,
+                  (next) =>
+                    update("pageMeta", { ...draft.pageMeta, [page]: { ...seo, ogTitle: next } }),
+                )}
+                {bilingualFields(
+                  lang === "ar" ? "وصف المشاركة" : "Social description",
+                  seo.ogDescription,
+                  (next) =>
+                    update("pageMeta", {
+                      ...draft.pageMeta,
+                      [page]: { ...seo, ogDescription: next },
+                    }),
+                  true,
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="vz-form-stack" style={{ marginTop: 24 }}>
+            <PanelTitle
+              icon={<ImagePlus />}
+              title={lang === "ar" ? "وسائط الصفحات" : "Page media"}
+              detail={
+                lang === "ar"
+                  ? "الروابط تُحمّل من قاعدة البيانات"
+                  : "Media URLs are loaded from MySQL"
+              }
+            />
+            {Object.entries(draft.pageAssets).map(([key, url]) =>
+              mediaInput(
+                key,
+                url,
+                (value) => update("pageAssets", { ...draft.pageAssets, [key]: value }),
+                /Video|video/i.test(key) ? "video/*" : "image/*",
+              ),
+            )}
           </div>
         </div>
       </>

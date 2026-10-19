@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Detail, Language } from "./types";
-import { translate } from "./types";
+import { usePageTranslate } from "@/lib/cms";
 
 type Props = {
   language: Language;
@@ -12,7 +12,7 @@ type Props = {
 
 export function ShowcaseDetailDialog({ language, detail, onClose }: Props) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
 
   useEffect(() => {
     if (detail) dialogRef.current?.showModal();

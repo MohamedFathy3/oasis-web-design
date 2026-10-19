@@ -1,58 +1,57 @@
-# Backend وتشغيل Viral Zoom
+# Backend and Node.js + MySQL deployment
 
-يقدّم backend بـ **Node.js** صفحات التطبيق وواجهات API من الأصل نفسه. محتوى CMS يُحفظ في قاعدة SQLite على الخادم في `DATA_DIR/site-content.sqlite`، والملفات المرفوعة في `DATA_DIR/uploads/`، لذلك يرى جميع الزوار التعديلات نفسها. لا تُخزّن بيانات المحتوى أو جلسة المدير في `localStorage`.
+The site runs on a Node.js SSR/API server. MySQL is the operational source of public site content: bilingual text for every public route, per-route SEO/social metadata, page media URLs, brand identity, homepage settings, contact data, services, projects, client records and nested galleries/showcases. Public routes are rendering templates; their published content and detail-page SEO are loaded from MySQL-backed server functions. `/admin` edits and saves the CMS document through authenticated APIs. `localStorage` is not used as the published-content source. Uploaded images/videos are saved under `DATA_DIR/uploads/`, with URLs stored in MySQL. Bundled site media under `public/media/` must be deployed along with the code.
 
-عند أول تشغيل، تُنشأ قاعدة SQLite وتُملأ من `site-content.json` القديم إن كان موجودًا داخل `DATA_DIR`؛ يظل ملف JSON كما هو كنسخة احتياطية ولا تُكتب إليه التعديلات الجديدة. إذا لم يوجد ملف قديم، تُنشأ قاعدة البيانات بمحتوى الموقع الابتدائي. خذ نسخة احتياطية من `site-content.sqlite` ومجلد `uploads` معًا.
+## MySQL import
 
-## مكتبة الصور والفيديو
+1. Create an empty MySQL database with `utf8mb4` (for example `viralzoom`) and a restricted user with privileges on that database.
+2. Import [`database/mysql-schema.sql`](./database/mysql-schema.sql) in phpMyAdmin or the host's MySQL import tool. It contains the schema and a snapshot of the website data currently in this repository: per-route bilingual SEO data, all default bilingual copy, brand and homepage configuration, services, projects, clients, galleries, social showcase entries, contact values and media URLs. It contains no credentials.
+3. Set the connection variables in the server environment. Do not put the real `.env` in Git.
 
-الأصول الافتراضية مضمّنة محليًا في `public/media/`، وصور معرض الأعمال تُقدّم من `public/media/portfolio/`؛ لا تعتمد الروابط الجديدة على مخزن الملفات المؤقت. تُحوّل الصور إلى WebP للعرض السريع، بينما يحتفظ المشروع بأصول المصدر الخام خارج مجلد النشر. عند رفع صورة أو فيديو من `/admin`، يُحفظ الملف في `DATA_DIR/uploads/` ويُحفظ رابطه ضمن سجل CMS، ويمكن استبداله أو مسحه من نفس المحرر. في الاستضافة الفعلية، يجب أن يكون `DATA_DIR` على قرص دائم.
-
-## تشغيل محلي
+Regenerate the SQL snapshot from source after editing the default CMS seed with:
 
 ```bash
-cp .env.example .env
-# افتح .env وضع كلمة مرور مدير جديدة وSESSION_SECRET عشوائيًا وطويلًا.
-npm ci
-npm run dev
+npm run db:export
 ```
 
-بعد بناء الإنتاج، يمكن تشغيل اختبار API المتكامل باستخدام `npm run build && npm run test:api`؛ يستخدم الاختبار مساحة بيانات مؤقتة وكلمة مرور اختبار ولا يغيّر بيانات الموقع الفعلية.
+The generated SQL uses upserts for records represented in the seed. Re-importing it updates those seeded rows to the current seed values, while additional content records are preserved. Back up the database before importing an updated snapshot into an existing site.
 
-لوحة الإدارة: `/admin`. استخدم البريد المعيّن في `ADMIN_EMAIL` (الافتراضي `admin@admin.com`) وكلمة المرور المحفوظة على الخادم في `ADMIN_PASSWORD`. لا تضع كلمة المرور أو `SESSION_SECRET` في Git. يتطلب تشغيل دخول المدير تعيين كلمة المرور؛ إذا لم تُضبط، سيرفض الخادم تسجيل الدخول بدل استخدام كلمة مرور افتراضية.
+## Environment
 
-## بناء وتشغيل إنتاجي
+Copy `.env.example` and configure `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, and optionally `MYSQL_POOL_SIZE`. Also set a new strong `ADMIN_PASSWORD`, a random `SESSION_SECRET` of at least 32 characters, and the real `PUBLIC_SITE_URL`. `DATA_DIR` stores uploaded files only; it must be on persistent disk and backed up separately from MySQL.
+
+The project requires Node.js 22.5 or newer. Install dependencies, build and run:
 
 ```bash
-PUBLIC_SITE_URL=https://your-verified-domain.example npm run build
+npm install
+npm run build
 npm start
 ```
 
-`PUBLIC_SITE_URL` يجب أن يكون عنوان الموقع العام الفعلي كاملًا مع HTTPS (مثل `https://viralzoom.tech`) ومضبوطًا في بيئة تشغيل الخادم، وليس وقت البناء فقط؛ يستخدمه فحص Origin لقبول طلبات لوحة الإدارة خلف Nginx/Reverse Proxy. لا تستخدم عنوان معاينة مؤقتًا. الخادم يحتاج **Node.js 22.5 أو أحدث** لدعم SQLite المضمّن في Node. اترك `DATA_DIR` على قرص دائم في الاستضافة، واحتفظ بنسخ احتياطية من قاعدة البيانات ومجلد الرفع. قاعدة SQLite ما زالت ملفًا على الخادم وليست قاعدة مستضافة خارجيًا؛ لا ينصح بمجلد محلي مؤقت أو serverless filesystem للبيانات والرفع. عند تشغيل أكثر من نسخة/عامل بالتوازي، انقل المحتوى إلى قاعدة بيانات مشتركة والوسائط إلى Object Storage بدل القرص المحلي.
+For local development use `npm run dev`. Configure the hosting control panel's Node application/root and startup command to point to the project and `npm start`; keep the process running behind the provider's reverse proxy. The API health endpoint is `GET /api/health` and reports `storage: mysql` after a successful connection.
 
-## API
+## CMS and API
 
-| Method            | Endpoint               | الصلاحية | الغرض                                                                      |
-| ----------------- | ---------------------- | -------- | -------------------------------------------------------------------------- |
-| `GET`             | `/api/health`          | عام      | صحة الخدمة ونوع التخزين                                                    |
-| `GET`             | `/api/auth/session`    | عام      | حالة جلسة المدير                                                           |
-| `POST`            | `/api/auth/login`      | عام      | دخول المدير؛ يضع cookie `HttpOnly`                                         |
-| `POST`            | `/api/auth/logout`     | جلسة     | إنهاء الجلسة                                                               |
-| `GET`             | `/api/site`            | عام      | إعدادات العلامة، أقسام الرئيسية، التواصل والخدمات والأعمال والعملاء        |
-| `PUT`             | `/api/site`            | مدير     | حفظ إعدادات CMS كاملة                                                      |
-| `GET`             | `/api/services`        | عام      | قائمة الخدمات؛ ويمكن طلب خدمة محددة بـ `/api/services/:id`                 |
-| `POST/PUT/DELETE` | `/api/services[/\:id]` | مدير     | إنشاء/تعديل/حذف خدمة                                                       |
-| `GET`             | `/api/projects`        | عام      | قائمة المشاريع وتفاصيلها، بما في ذلك الصور والتصنيفات ودراسة حالة السوشيال |
-| `POST/PUT/DELETE` | `/api/projects[/\:id]` | مدير     | إنشاء/تعديل/حذف مشروع                                                      |
-| `GET`             | `/api/clients`         | عام      | قائمة العملاء                                                              |
-| `POST/PUT/DELETE` | `/api/clients[/\:id]`  | مدير     | إنشاء/تعديل/حذف عميل                                                       |
-| `POST`            | `/api/uploads`         | مدير     | رفع JPG/PNG/WebP/GIF حتى 10 MB أو MP4/WebM حتى 100 MB                      |
-| `GET`             | `/uploads/:filename`   | عام      | تقديم ملف مرفوع من مجلد البيانات                                           |
-| `GET`             | `/sitemap.xml`         | عام      | Sitemap حيّ بالخدمات والمشاريع المنشورة عند ضبط النطاق                     |
-| `GET`             | `/robots.txt`          | عام      | توجيه الزواحف وإعلان رابط Sitemap عند ضبط النطاق                           |
+| Method | Endpoint | Access | Purpose |
+| --- | --- | --- | --- |
+| GET | `/api/health` | Public | Node/MySQL service status |
+| GET | `/api/auth/session` | Public | Admin session status |
+| POST | `/api/auth/login` | Public | Admin login; sets an HttpOnly cookie |
+| POST | `/api/auth/logout` | Session | End admin session |
+| GET/PUT | `/api/site` | Public/admin | Read published CMS or save full CMS document |
+| GET/POST/PUT/DELETE | `/api/services` | Public/admin | Service records |
+| GET/POST/PUT/DELETE | `/api/projects` | Public/admin | Project records |
+| GET/POST/PUT/DELETE | `/api/clients` | Public/admin | Client records |
+| POST | `/api/uploads` | Admin | JPG/PNG/WebP/GIF (10 MB) or MP4/WebM (100 MB) |
+| GET | `/uploads/:filename` | Public | Uploaded media |
+| GET | `/sitemap.xml`, `/robots.txt` | Public | SEO discovery endpoints |
 
-تُرسل طلبات الإدارة مع cookie الجلسة ذاتها؛ لوحة التحكم تفعّلها تلقائيًا. `POST /api/uploads` يستقبل `multipart/form-data` وفيه حقل `file`. الصور والفيديوهات المرفوعة لا تُحوّل إلى data URL.
+`/admin` is the content management interface. The **Page copy** section edits bilingual text, SEO/social metadata and page media for all pages; homepage, brand, contact and the services/projects/clients sections have their own controls. Detail-page SEO is derived from the corresponding MySQL record's bilingual name and description. Use the server-configured `ADMIN_EMAIL` and `ADMIN_PASSWORD`; do not deploy the sample password.
 
-## Search Console
+## Tests
 
-أثبت ملكية النطاق في [Google Search Console](https://search.google.com/search-console) بنفسك عبر DNS أو طريقة التحقق التي تختارها، ثم أرسل `https://نطاقك/sitemap.xml`. لا يمكن إثبات الملكية أو إرسال ملفات sitemap نيابة عن مالك النطاق من دون صلاحية حساب Google.
+Run `npm test` for routing/unit tests. The API integration suite requires a dedicated, disposable test database; do not point it at a production database. Set `MYSQL_TEST_HOST`, `MYSQL_TEST_PORT`, `MYSQL_TEST_DATABASE`, `MYSQL_TEST_USER`, and `MYSQL_TEST_PASSWORD`, then run `npm run build && npm run test:api`. The test refuses database names that do not clearly include `test`, `_ci`, or `_tmp`. Without those variables, the integration test reports that it was skipped.
+
+## Backups and SEO
+
+Back up MySQL with the hosting provider's export or `mysqldump`, and back up `DATA_DIR/uploads/` separately. After deployment, verify the actual HTTPS origin, then submit `https://your-domain.example/sitemap.xml` in Google Search Console after domain ownership verification.

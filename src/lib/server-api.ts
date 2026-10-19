@@ -1,12 +1,11 @@
 import { createHmac, randomBytes, timingSafeEqual, randomUUID } from "node:crypto";
-import { DatabaseSync } from "node:sqlite";
+import { createPool, type Pool } from "mysql2/promise";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { basename, extname, resolve, sep } from "node:path";
 import { env } from "node:process";
 import { initialConfig, type EditableItem, type SiteConfig } from "@/lib/cms";
 
 const DATA_DIR = resolve(env["DATA_DIR"] || "data");
-const DATABASE_FILE = resolve(DATA_DIR, "site-content.sqlite");
 const LEGACY_CONTENT_FILE = resolve(DATA_DIR, "site-content.json");
 const UPLOADS_DIR = resolve(DATA_DIR, "uploads");
 const COOKIE_NAME = "vz_admin";
@@ -20,7 +19,7 @@ const collections = {
 } as const;
 type CollectionName = keyof typeof collections;
 type ContentDocument = { config: SiteConfig };
-let database: DatabaseSync | undefined;
+let database: Pool | undefined;
 let storeInitialization: Promise<void> | undefined;
 
 function json(data: unknown, status = 200, headers?: HeadersInit) {
@@ -186,30 +185,30 @@ function migrateStoredMedia(document: ContentDocument): {
   return { document: rewritten.value, changed };
 }
 
-function loadConfigFromDatabase(): SiteConfig {
+function jsonValue<T>(value: unknown): T {
+  if (typeof value === "string") return JSON.parse(value) as T;
+  return value as T;
+}
+
+async function loadConfigFromDatabase(): Promise<SiteConfig> {
   const db = database;
-  if (!db) throw new Error("SQLite database is not initialized");
-  const settings = db
-    .prepare("SELECT brand, hero, sections, contact FROM site_settings WHERE id = 1")
-    .get();
-  if (!settings) throw new Error("SQLite site settings are missing");
-  const { brand, hero, sections, contact } = settings;
-  if (
-    typeof brand !== "string" ||
-    typeof hero !== "string" ||
-    typeof sections !== "string" ||
-    typeof contact !== "string"
-  ) {
-    throw new Error("SQLite site settings have invalid values");
-  }
-  const items = db
-    .prepare("SELECT collection, content FROM content_items ORDER BY collection, position, rowid")
-    .all();
+  if (!db) throw new Error("MySQL database is not initialized");
+  const [settingRows] = await db.query<import("mysql2").RowDataPacket[]>(
+    "SELECT page_meta, page_copy, page_assets, brand, hero, sections, contact FROM site_settings WHERE id = 1",
+  );
+  const settings = settingRows[0];
+  if (!settings) throw new Error("MySQL site settings are missing");
+  const [items] = await db.query<import("mysql2").RowDataPacket[]>(
+    "SELECT collection, content FROM content_items ORDER BY collection, position, item_id",
+  );
   const config: SiteConfig = {
-    brand: JSON.parse(brand),
-    hero: JSON.parse(hero),
-    sections: JSON.parse(sections),
-    contact: JSON.parse(contact),
+    pageMeta: jsonValue<SiteConfig["pageMeta"]>(settings["page_meta"]),
+    pageCopy: jsonValue<SiteConfig["pageCopy"]>(settings["page_copy"]),
+    pageAssets: jsonValue<SiteConfig["pageAssets"]>(settings["page_assets"]),
+    brand: jsonValue<SiteConfig["brand"]>(settings["brand"]),
+    hero: jsonValue<SiteConfig["hero"]>(settings["hero"]),
+    sections: jsonValue<SiteConfig["sections"]>(settings["sections"]),
+    contact: jsonValue<SiteConfig["contact"]>(settings["contact"]),
     services: [],
     portfolio: [],
     clients: [],
@@ -217,84 +216,110 @@ function loadConfigFromDatabase(): SiteConfig {
   for (const item of items) {
     const collectionName = item["collection"];
     const content = item["content"];
-    if (typeof collectionName !== "string" || typeof content !== "string")
-      throw new Error("SQLite content item has invalid values");
+    if (typeof collectionName !== "string")
+      throw new Error("MySQL content item has invalid collection");
     const collection = collections[collectionName as CollectionName];
-    if (!collection) throw new Error(`Unknown SQLite content collection: ${collectionName}`);
-    (config[collection] as EditableItem[]).push(JSON.parse(content) as EditableItem);
+    if (!collection) throw new Error(`Unknown MySQL content collection: ${collectionName}`);
+    (config[collection] as EditableItem[]).push(jsonValue<EditableItem>(content));
   }
-  if (!validConfig(config)) throw new Error("SQLite site content is invalid");
+  if (!validConfig(config)) throw new Error("MySQL site content is invalid");
   return config;
 }
 
-function persistStore(document: ContentDocument) {
+async function persistStore(document: ContentDocument) {
   const db = database;
-  if (!db) throw new Error("SQLite database is not initialized");
+  if (!db) throw new Error("MySQL database is not initialized");
+  const connection = await db.getConnection();
   const config = document.config;
-  db.exec("BEGIN IMMEDIATE");
   try {
-    db.prepare(
-      `INSERT INTO site_settings (id, brand, hero, sections, contact)
-       VALUES (1, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
-         brand = excluded.brand,
-         hero = excluded.hero,
-         sections = excluded.sections,
-         contact = excluded.contact`,
-    ).run(
-      JSON.stringify(config.brand),
-      JSON.stringify(config.hero),
-      JSON.stringify(config.sections),
-      JSON.stringify(config.contact),
+    await connection.beginTransaction();
+    await connection.execute(
+      `INSERT INTO site_settings (id, page_meta, page_copy, page_assets, brand, hero, sections, contact)
+       VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE page_meta = VALUES(page_meta), page_copy = VALUES(page_copy), page_assets = VALUES(page_assets), brand = VALUES(brand), hero = VALUES(hero),
+         sections = VALUES(sections), contact = VALUES(contact)`,
+      [
+        JSON.stringify(config.pageMeta),
+        JSON.stringify(config.pageCopy),
+        JSON.stringify(config.pageAssets),
+        JSON.stringify(config.brand),
+        JSON.stringify(config.hero),
+        JSON.stringify(config.sections),
+        JSON.stringify(config.contact),
+      ],
     );
-    db.prepare("DELETE FROM content_items").run();
-    const insertItem = db.prepare(
-      "INSERT INTO content_items (collection, item_id, position, content) VALUES (?, ?, ?, ?)",
-    );
+    await connection.execute("DELETE FROM content_items");
     for (const collection of Object.keys(collections) as CollectionName[]) {
       const field = collections[collection];
-      config[field].forEach((item, position) => {
-        insertItem.run(collection, item.id, position, JSON.stringify(item));
-      });
+      for (const [position, item] of config[field].entries()) {
+        await connection.execute(
+          "INSERT INTO content_items (collection, item_id, position, content) VALUES (?, ?, ?, ?)",
+          [collection, item.id, position, JSON.stringify(item)],
+        );
+      }
     }
-    db.exec("COMMIT");
+    await connection.commit();
   } catch (error) {
-    db.exec("ROLLBACK");
+    await connection.rollback();
     throw error;
+  } finally {
+    connection.release();
   }
 }
 
 async function initializeStore() {
   await mkdir(DATA_DIR, { recursive: true });
   await mkdir(UPLOADS_DIR, { recursive: true });
-  database = new DatabaseSync(DATABASE_FILE);
-  database.exec(`
-    PRAGMA journal_mode = WAL;
-    PRAGMA synchronous = NORMAL;
-    PRAGMA busy_timeout = 5000;
-    CREATE TABLE IF NOT EXISTS site_settings (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      brand TEXT NOT NULL,
-      hero TEXT NOT NULL,
-      sections TEXT NOT NULL,
-      contact TEXT NOT NULL
+  const host = env["MYSQL_HOST"]?.trim();
+  const user = env["MYSQL_USER"]?.trim();
+  const password = env["MYSQL_PASSWORD"];
+  const databaseName = env["MYSQL_DATABASE"]?.trim();
+  if (!host || !user || password === undefined || !databaseName) {
+    throw new Error(
+      "MySQL is required: set MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, and MYSQL_DATABASE.",
     );
-    CREATE TABLE IF NOT EXISTS content_items (
-      collection TEXT NOT NULL CHECK (collection IN ('services', 'projects', 'clients')),
-      item_id TEXT NOT NULL,
-      position INTEGER NOT NULL,
-      content TEXT NOT NULL,
-      PRIMARY KEY (collection, item_id)
-    );
-    CREATE INDEX IF NOT EXISTS content_items_order
-      ON content_items (collection, position);
-  `);
-  const hasSettings = database.prepare("SELECT 1 AS present FROM site_settings WHERE id = 1").get();
-  if (hasSettings) return;
+  }
+  database = createPool({
+    host,
+    port: Number(env["MYSQL_PORT"] || 3306),
+    user,
+    password,
+    database: databaseName,
+    charset: "utf8mb4",
+    waitForConnections: true,
+    connectionLimit: Number(env["MYSQL_POOL_SIZE"] || 10),
+    queueLimit: 0,
+    enableKeepAlive: true,
+  });
+  await database.query("SELECT 1");
+  await database.query(`CREATE TABLE IF NOT EXISTS site_settings (
+    id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+    page_meta JSON NOT NULL,
+    page_copy JSON NOT NULL,
+    page_assets JSON NOT NULL,
+    brand JSON NOT NULL,
+    hero JSON NOT NULL,
+    sections JSON NOT NULL,
+    contact JSON NOT NULL,
+    CONSTRAINT chk_site_settings_singleton CHECK (id = 1)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  await database.query(`CREATE TABLE IF NOT EXISTS content_items (
+    collection VARCHAR(32) NOT NULL,
+    item_id VARCHAR(191) NOT NULL,
+    position INT UNSIGNED NOT NULL,
+    content JSON NOT NULL,
+    PRIMARY KEY (collection, item_id),
+    KEY content_items_order (collection, position)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`);
+  const [hasSettings] = await database.query<import("mysql2").RowDataPacket[]>(
+    "SELECT 1 AS present FROM site_settings WHERE id = 1",
+  );
+  if (hasSettings.length) return;
 
   let document: ContentDocument;
   try {
-    const parsed = JSON.parse(await readFile(LEGACY_CONTENT_FILE, "utf8")) as ContentDocument;
+    const legacyContentFile = resolve(DATA_DIR, "site-content.json");
+    const parsed = JSON.parse(await readFile(legacyContentFile, "utf8")) as ContentDocument;
     if (!parsed || typeof parsed !== "object" || !validConfig(parsed.config))
       throw new Error("Invalid content document");
     const migrated = migrateStoredMedia(parsed);
@@ -303,18 +328,20 @@ async function initializeStore() {
     if ((error as { code?: string }).code !== "ENOENT") throw error;
     document = { config: initialConfig };
   }
-  persistStore(document);
+  await persistStore(document);
 }
 
 async function ensureStore(): Promise<ContentDocument> {
   if (!storeInitialization) {
-    storeInitialization = initializeStore().catch((error) => {
+    storeInitialization = initializeStore().catch(async (error) => {
       storeInitialization = undefined;
+      await database?.end();
+      database = undefined;
       throw error;
     });
   }
   await storeInitialization;
-  return { config: loadConfigFromDatabase() };
+  return { config: await loadConfigFromDatabase() };
 }
 
 async function readJson(request: Request, limit = 4 * 1024 * 1024): Promise<unknown> {
@@ -328,7 +355,43 @@ async function readJson(request: Request, limit = 4 * 1024 * 1024): Promise<unkn
 function validConfig(candidate: unknown): candidate is SiteConfig {
   if (!candidate || typeof candidate !== "object") return false;
   const config = candidate as Partial<SiteConfig>;
-  if (!config.brand || !config.hero || !config.sections || !config.contact) return false;
+  if (
+    !config.pageMeta ||
+    typeof config.pageMeta !== "object" ||
+    !Object.values(config.pageMeta).every(
+      (seo) =>
+        !!seo &&
+        typeof seo.title?.en === "string" &&
+        typeof seo.title?.ar === "string" &&
+        typeof seo.description?.en === "string" &&
+        typeof seo.description?.ar === "string" &&
+        typeof seo.ogTitle?.en === "string" &&
+        typeof seo.ogTitle?.ar === "string" &&
+        typeof seo.ogDescription?.en === "string" &&
+        typeof seo.ogDescription?.ar === "string",
+    ) ||
+    !config.pageCopy ||
+    typeof config.pageCopy !== "object" ||
+    !config.pageAssets ||
+    typeof config.pageAssets !== "object" ||
+    !config.brand ||
+    !config.hero ||
+    !config.sections ||
+    !config.contact
+  )
+    return false;
+  if (
+    !Object.values(config.pageCopy).every(
+      (value) => !!value && typeof value.en === "string" && typeof value.ar === "string",
+    )
+  )
+    return false;
+  if (
+    !Object.values(config.pageAssets).every(
+      (value) => typeof value === "string" && !value.startsWith("data:"),
+    )
+  )
+    return false;
   if (
     !Array.isArray(config.services) ||
     !Array.isArray(config.portfolio) ||
@@ -450,7 +513,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
   }
   if (url.pathname === "/api/health" && method === "GET") {
     await ensureStore();
-    return json({ ok: true, runtime: "node", storage: "sqlite" });
+    return json({ ok: true, runtime: "node", storage: "mysql" });
   }
 
   if (url.pathname.startsWith("/uploads/")) {

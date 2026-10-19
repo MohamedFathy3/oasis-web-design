@@ -1,10 +1,26 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { access, mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "node:net";
 import { randomUUID } from "node:crypto";
+
+const mysqlHost = process.env.MYSQL_TEST_HOST;
+const mysqlUser = process.env.MYSQL_TEST_USER;
+const mysqlPassword = process.env.MYSQL_TEST_PASSWORD;
+const mysqlDatabase = process.env.MYSQL_TEST_DATABASE;
+if (!mysqlHost || !mysqlUser || mysqlPassword === undefined || !mysqlDatabase) {
+  console.log(
+    "Skipped MySQL API integration: set MYSQL_TEST_HOST, MYSQL_TEST_PORT, MYSQL_TEST_DATABASE, MYSQL_TEST_USER and MYSQL_TEST_PASSWORD for an isolated disposable test database.",
+  );
+  process.exit(0);
+}
+if (!/(?:test|_ci|_tmp)/i.test(mysqlDatabase)) {
+  throw new Error(
+    "Refusing to mutate the configured database: MYSQL_TEST_DATABASE must clearly be a disposable test database name.",
+  );
+}
 
 const root = process.cwd();
 const dataDir = await mkdtemp(join(tmpdir(), "viral-zoom-api-"));
@@ -17,7 +33,6 @@ const port = await new Promise((resolve, reject) => {
   });
 });
 const password = `integration-${randomUUID()}-Strong!`;
-const databaseFile = join(dataDir, "site-content.sqlite");
 const server = spawn(process.execPath, [".output/server/index.mjs"], {
   cwd: root,
   env: {
@@ -30,6 +45,11 @@ const server = spawn(process.execPath, [".output/server/index.mjs"], {
     ADMIN_PASSWORD: password,
     SESSION_SECRET: randomUUID() + randomUUID(),
     DATA_DIR: dataDir,
+    MYSQL_HOST: mysqlHost,
+    MYSQL_PORT: process.env.MYSQL_TEST_PORT || "3306",
+    MYSQL_DATABASE: mysqlDatabase,
+    MYSQL_USER: mysqlUser,
+    MYSQL_PASSWORD: mysqlPassword,
     PUBLIC_SITE_URL: "https://viralzoom-test.invalid",
   },
   stdio: ["ignore", "pipe", "pipe"],
@@ -64,8 +84,7 @@ try {
   const health = await fetch(`${base}/api/health`).then((response) => response.json());
   assert.equal(health.ok, true);
   assert.equal(health.runtime, "node");
-  assert.equal(health.storage, "sqlite");
-  await access(databaseFile);
+  assert.equal(health.storage, "mysql");
 
   const publicConfig = await fetch(`${base}/api/site`).then((response) => response.json());
   assert.equal(
@@ -74,6 +93,12 @@ try {
     "Services should be hidden by default on the homepage",
   );
   assert.ok(publicConfig.portfolio.length > 0, "Public content should include published projects");
+  assert.ok(
+    Object.keys(publicConfig.pageCopy).length >= 100,
+    "All public page copy should be loaded from MySQL",
+  );
+  assert.ok(publicConfig.pageMeta.home.title.en, "Homepage SEO should be loaded from MySQL");
+  assert.ok(publicConfig.pageAssets.showcaseBanner, "Page media URLs should be loaded from MySQL");
 
   const deniedWrite = await fetch(`${base}/api/site`, {
     method: "PUT",
@@ -84,20 +109,14 @@ try {
 
   const login = await fetch(`${base}/api/auth/login`, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      origin: "https://attacker.invalid",
-    },
+    headers: { "content-type": "application/json", origin: "https://attacker.invalid" },
     body: JSON.stringify({ email: "admin@admin.com", password }),
   });
   await expectStatus(login, 403, "Cross-origin admin login");
 
   const trustedLogin = await fetch(`${base}/api/auth/login`, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      origin: "https://viralzoom-test.invalid",
-    },
+    headers: { "content-type": "application/json", origin: "https://viralzoom-test.invalid" },
     body: JSON.stringify({ email: "admin@admin.com", password }),
   });
   await expectStatus(trustedLogin, 200, "Admin login through configured public origin");
@@ -114,6 +133,9 @@ try {
 
   const savedConfig = structuredClone(adminConfig);
   savedConfig.sections.services = true;
+  savedConfig.pageCopy["ABOUT VIRAL ZOOM"].en = "Updated about title from integration test";
+  savedConfig.pageMeta.home.title.en = "Integration test SEO title";
+  savedConfig.pageAssets.showcaseBanner = "/media/site/integration-test.png";
   const save = await fetch(`${base}/api/site`, {
     method: "PUT",
     headers: {
@@ -127,7 +149,24 @@ try {
   const persistedConfig = await fetch(`${base}/api/site`, { headers: { cookie } }).then(
     (response) => response.json(),
   );
-  assert.equal(persistedConfig.sections.services, true, "CMS content should persist on the server");
+  assert.equal(persistedConfig.sections.services, true, "CMS settings should persist in MySQL");
+  assert.equal(
+    persistedConfig.pageCopy["ABOUT VIRAL ZOOM"].en,
+    "Updated about title from integration test",
+    "Page copy should persist in MySQL",
+  );
+  assert.equal(persistedConfig.pageMeta.home.title.en, "Integration test SEO title");
+  assert.equal(persistedConfig.pageAssets.showcaseBanner, "/media/site/integration-test.png");
+  const renderedHome = await fetch(base).then((response) => response.text());
+  assert.ok(
+    renderedHome.includes("Integration test SEO title"),
+    "Home page SEO should render from MySQL",
+  );
+  const renderedAbout = await fetch(`${base}/about`).then((response) => response.text());
+  assert.ok(
+    renderedAbout.includes("Updated about title from integration test"),
+    "About page copy should render from MySQL",
+  );
 
   const project = {
     id: "integration-test-project",
@@ -162,23 +201,23 @@ try {
   const uploaded = await upload.json();
   assert.ok(uploaded.url.startsWith("/uploads/"));
   const media = await fetch(new URL(uploaded.url, base));
-  await expectStatus(media, 200, "Uploaded media delivery");
+  await expectStatus(media, 200, "Media delivery");
   assert.equal(media.headers.get("content-type"), "image/png");
 
   const sitemap = await fetch(`${base}/sitemap.xml`).then((response) => response.text());
   assert.ok(sitemap.includes("https://viralzoom-test.invalid/projects/integration-test-project"));
   const robots = await fetch(`${base}/robots.txt`).then((response) => response.text());
   assert.ok(robots.includes("Disallow: /admin"));
-
   console.log(
-    "API integration passed: SQLite persistence, health, guest write protection, admin session, persisted CMS edits, project CRUD, media upload, dynamic sitemap and robots rules.",
+    "MySQL API integration passed: health, page copy, admin authentication, CMS persistence, project CRUD, media upload, sitemap and robots.",
   );
 } finally {
+  const exited = new Promise((resolve) => server.once("exit", resolve));
   server.kill("SIGTERM");
-  await new Promise((resolve) => {
-    if (server.exitCode !== null) return resolve();
-    server.once("exit", resolve);
-    setTimeout(resolve, 2_000).unref();
-  });
+  await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 2_000))]);
+  if (server.exitCode === null) {
+    server.kill("SIGKILL");
+    await exited;
+  }
   await rm(dataDir, { recursive: true, force: true });
 }

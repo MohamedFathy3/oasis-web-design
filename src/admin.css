@@ -1825,3 +1825,19 @@
   color: #a43c3c;
   background: #fff7f7;
 }
+
+.vz-page-copy-row {
+  border-bottom: 1px solid #eee8f2;
+  padding: 14px 0 18px;
+}
+.vz-page-copy-key {
+  display: block;
+  margin-bottom: 9px;
+  color: #766b7e;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.vz-page-copy-row textarea {
+  min-height: 76px;
+}

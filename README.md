@@ -1,32 +1,25 @@
-# Oasis Web Design
+# Viral Zoom — Website
 
-69499e
-230f41 دي الالوان الاساسيه للويب سايت دما بس خلي ببالك لا bg dark تمام بعت ليك الاثنين لوجو علشان هنعلم كمان bg white
-السكشن الاول بيتكون من فيديو
-السشكن الاثاني هتكون الخدمان هتكون اسكرل لعي جنب يامعلم فيها حوالي بعد كده شكل ال prfile
-بعد كده لا clinet بيكون اسكرل يامعلم https://dpmegypt.com/#0 انا عاوز زي الصوره بالبظط وكمان عطيتم يامعلم الويب سايت ال هو refrence علشان انا عاوز يزه تمام وكمان عاوز الموقع عربي وانجليزي
+Arabic/English creative and digital marketing website built with React, TanStack Start, and a Node.js SSR/API server. Published page copy, SEO/social metadata, page media URLs, services, projects, clients, and contact data are served from MySQL; administrators edit them in `/admin`.
 
-This project was built with [Lovable](https://lovable.dev).
+## Local development
 
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/0687453c-ae9b-4bd8-ae57-adc33c0944a1).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+```bash
+cp .env.example .env
+# Set MySQL credentials and new admin/session secrets in .env.
+npm install
 npm run dev
 ```
 
-## Node backend
+## MySQL database
 
-راجع [`BACKEND.md`](./BACKEND.md) لإعداد API والمصادقة والرفع والتشغيل الإنتاجي. بيانات الموقع محفوظة في قاعدة SQLite على خادم Node داخل `DATA_DIR/site-content.sqlite`، والوسائط في `DATA_DIR/uploads/`؛ استخدم قرصًا دائمًا ونسخًا احتياطية قبل النشر العام.
+Import [`database/mysql-schema.sql`](./database/mysql-schema.sql) into your MySQL database before starting the production server. It contains the current repository's seed data. Configure `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, and `MYSQL_PASSWORD` at runtime. To rebuild the SQL export from source, use `npm run db:export`.
+
+## Production
+
+```bash
+npm run build
+npm start
+```
+
+See [`BACKEND.md`](./BACKEND.md) for MySQL import, environment configuration, hosting steps, API details, media storage and backups. The host must run Node.js 22.5 or newer and provide a persistent directory for uploaded media.

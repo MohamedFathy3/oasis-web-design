@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
-import banner from "@/assets/Viral Zoom Creative Agency Banner.png";
 import type { Language } from "./types";
-import { translate } from "./types";
+import { useCMS, usePageTranslate } from "@/lib/cms";
 
 export function ShowcaseBanner({ language }: { language: Language }) {
+  const t = usePageTranslate(language);
+  const { config } = useCMS();
   const sectionRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -40,7 +41,10 @@ export function ShowcaseBanner({ language }: { language: Language }) {
         );
         image.style.setProperty("--banner-zoom", `${zoom}`);
         const imageTravel = Math.max(0, image.offsetHeight * zoom - frameElement.clientHeight);
-        const scrollEnd = Math.min(contactTop, document.documentElement.scrollHeight - window.innerHeight);
+        const scrollEnd = Math.min(
+          contactTop,
+          document.documentElement.scrollHeight - window.innerHeight,
+        );
         const revealOffset = Math.max(0, processBottom - window.scrollY);
         const travelProgress = Math.max(
           0,
@@ -69,15 +73,14 @@ export function ShowcaseBanner({ language }: { language: Language }) {
     <section
       ref={sectionRef}
       className="showcase-banner"
-      aria-label={translate(language, "Viral Zoom creative agency", "وكالة فايرال زوم الإبداعية")}
+      aria-label={t("Viral Zoom creative agency", "وكالة فايرال زوم الإبداعية")}
     >
       <div className="showcase-banner-frame" ref={frameRef}>
         <img
           ref={imageRef}
           className="showcase-banner-image"
-          src={banner}
-          alt={translate(
-            language,
+          src={config.pageAssets["showcaseBanner"]}
+          alt={t(
             "Viral Zoom: creative ideas, powerful results, your brand amplified.",
             "فايرال زوم: أفكار إبداعية ونتائج قوية تعزز علامتك التجارية.",
           )}

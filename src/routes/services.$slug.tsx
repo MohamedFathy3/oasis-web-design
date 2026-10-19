@@ -1,19 +1,23 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import logo from "@/assets/logo.png.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
 import { ShowcaseFooter, ShowcaseHeader } from "@/components/showcase";
 import type { Language, SectionId } from "@/components/showcase/types";
-import { services } from "@/lib/showcase-data";
-import { translate } from "@/components/showcase/types";
-import { useCMS } from "@/lib/cms";
+import { useCMS, usePageTranslate } from "@/lib/cms";
 import { absoluteSiteAsset, canonicalUrl } from "@/lib/seo";
+import { loadSiteConfig } from "@/lib/cms-loader";
 
 export const Route = createFileRoute("/services/$slug")({
-  loader: ({ params }) => {
-    const service = services.find((item) => item.slug === params.slug);
-    return { slug: params.slug, service: service ?? null };
+  loader: async ({ params }) => {
+    const config = await loadSiteConfig();
+    const services = config.services.map((item) => ({
+      slug: item.id,
+      title: item.name,
+      description: item.description,
+      image: item.image,
+    }));
+    const service = services.find((item) => item.slug === params.slug) ?? null;
+    return { slug: params.slug, service, services };
   },
   head: ({ loaderData }) => {
     const data = loaderData ?? { slug: "service", service: null };
@@ -83,7 +87,7 @@ function ShowServicePage() {
   const [darkMode, setDarkMode] = useState(true);
   const navigate = useNavigate();
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
 
   useEffect(() => {
     try {
@@ -140,7 +144,7 @@ function ShowServicePage() {
           description: item.description,
           image: item.image,
         }))
-    : services;
+    : routeData.services;
   const serviceIndex = currentServices.findIndex((item) => item.slug === service.slug);
   const relatedServices = currentServices.filter((item) => item.slug !== service.slug).slice(0, 3);
   const serviceIntro = truncateServiceCopy(service.description[language], 190);
@@ -260,7 +264,6 @@ function ShowServicePage() {
       </main>
       <ShowcaseFooter
         language={language}
-        logo={darkMode ? whiteLogo.url : logo.url}
         onBackToTop={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       />
     </div>

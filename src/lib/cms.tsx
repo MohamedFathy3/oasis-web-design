@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { services as baseServices } from "@/lib/showcase-data";
+import generatedPageCopy from "@/lib/page-copy.generated.json";
 import {
   projects as baseProjects,
   type Project,
@@ -43,7 +44,16 @@ export type EditableItem = {
   imageGallery?: string[];
   socialMediaShowcase?: SocialMediaShowcase;
 };
+export type PageSeo = {
+  title: Bilingual;
+  description: Bilingual;
+  ogTitle: Bilingual;
+  ogDescription: Bilingual;
+};
 export type SiteConfig = {
+  pageMeta: Record<string, PageSeo>;
+  pageCopy: Record<string, Bilingual>;
+  pageAssets: Record<string, string>;
   brand: { name: string; accent: string; logo: string; whiteLogo: string };
   hero: { title: Bilingual; subtitle: Bilingual; video: string; poster: string };
   sections: Record<
@@ -57,6 +67,92 @@ export type SiteConfig = {
 };
 
 export const initialConfig: SiteConfig = {
+  pageMeta: {
+    home: {
+      title: {
+        en: "Viral Zoom — Creative & Digital Agency",
+        ar: "فايرال زوم — وكالة إبداعية ورقمية",
+      },
+      description: {
+        en: "Creative ideas, digital marketing and production that help ambitious brands grow.",
+        ar: "أفكار إبداعية وتسويق رقمي وإنتاج يساعد العلامات التجارية الطموحة على النمو.",
+      },
+      ogTitle: {
+        en: "Viral Zoom | Creative Digital Agency",
+        ar: "فايرال زوم | وكالة إبداعية رقمية",
+      },
+      ogDescription: {
+        en: "Strategy, design, marketing and production for brands ready to grow.",
+        ar: "استراتيجية وتصميم وتسويق وإنتاج للعلامات التجارية المستعدة للنمو.",
+      },
+    },
+    about: {
+      title: { en: "About Viral Zoom — Creative Agency", ar: "من نحن — فايرال زوم" },
+      description: {
+        en: "Meet Viral Zoom, a creative and digital agency bringing strategy, design and technology together.",
+        ar: "تعرف على فايرال زوم، وكالة إبداعية ورقمية تجمع الاستراتيجية والتصميم والتكنولوجيا.",
+      },
+      ogTitle: { en: "About Viral Zoom", ar: "عن فايرال زوم" },
+      ogDescription: {
+        en: "A creative partner for brands ready to grow.",
+        ar: "شريك إبداعي للعلامات التجارية المستعدة للنمو.",
+      },
+    },
+    contact: {
+      title: { en: "Contact Viral Zoom — Let's Talk", ar: "تواصل مع فايرال زوم" },
+      description: {
+        en: "Have a project in mind? Get in touch with the Viral Zoom creative team.",
+        ar: "عندك مشروع في بالك؟ تواصل مع فريق فايرال زوم الإبداعي.",
+      },
+      ogTitle: { en: "Contact Viral Zoom", ar: "تواصل مع فايرال زوم" },
+      ogDescription: {
+        en: "Tell us what you are looking to create and let's start a conversation.",
+        ar: "احكيلنا عما تريد تنفيذه ولنبدأ الحوار.",
+      },
+    },
+    services: {
+      title: { en: "Our Services — Viral Zoom", ar: "خدمات فايرال زوم" },
+      description: {
+        en: "Explore the creative, digital marketing and production services offered by Viral Zoom.",
+        ar: "اكتشف خدمات فايرال زوم الإبداعية والتسويقية والإنتاجية.",
+      },
+      ogTitle: {
+        en: "Viral Zoom Digital Marketing and Creative Services",
+        ar: "خدمات التسويق الرقمي والإبداع من فايرال زوم",
+      },
+      ogDescription: {
+        en: "Web design, digital marketing, social media and creative production.",
+        ar: "تصميم مواقع وتسويق رقمي وإدارة سوشيال ميديا وإنتاج إبداعي.",
+      },
+    },
+    projects: {
+      title: { en: "Our Projects — Viral Zoom", ar: "أعمال فايرال زوم" },
+      description: {
+        en: "Explore Viral Zoom projects in social media, web design, apps and brand identity.",
+        ar: "تصفح مشاريع فايرال زوم في السوشيال ميديا وتصميم المواقع والتطبيقات والهوية البصرية.",
+      },
+      ogTitle: {
+        en: "Viral Zoom Creative and Marketing Projects",
+        ar: "أعمال فايرال زوم في التسويق والتصميم",
+      },
+      ogDescription: {
+        en: "Selected social media, website, app and brand identity projects.",
+        ar: "مشاريع مختارة في السوشيال ميديا والمواقع والتطبيقات والهوية البصرية.",
+      },
+    },
+  },
+  pageCopy: generatedPageCopy as Record<string, Bilingual>,
+  pageAssets: {
+    aboutHero: "/media/campaign/social-02.webp",
+    showcaseBanner: "/media/site/showcase-banner.png",
+    contactWorldMap: "/media/site/world-map.png",
+    heroPoster: "/media/video/social-campaign-poster.jpg",
+    heroVideoWebm: "/media/video/social-campaign-reel.webm",
+    projectsVideoMp4: "/media/video/social-campaign-reel.mp4",
+    projectsVideoWebm: "/media/video/social-campaign-reel.webm",
+    projectsVideoPoster: "/media/video/social-campaign-poster.jpg",
+    serviceFallback: "/media/campaign/social-02.webp",
+  },
   brand: { name: "Viral Zoom", accent: "#69499e", logo: logo.url, whiteLogo: whiteLogo.url },
   hero: {
     title: { en: "Creative & Digital Marketing", ar: "الإبداع والتسويق الرقمي" },
@@ -179,6 +275,21 @@ export function isSiteConfig(value: unknown): value is SiteConfig {
   if (!value || typeof value !== "object") return false;
   const config = value as Partial<SiteConfig>;
   return (
+    !!config.pageMeta &&
+    typeof config.pageMeta === "object" &&
+    Object.values(config.pageMeta).every(
+      (seo) =>
+        isBilingual(seo.title) &&
+        isBilingual(seo.description) &&
+        isBilingual(seo.ogTitle) &&
+        isBilingual(seo.ogDescription),
+    ) &&
+    !!config.pageCopy &&
+    typeof config.pageCopy === "object" &&
+    !!config.pageAssets &&
+    typeof config.pageAssets === "object" &&
+    Object.values(config.pageAssets).every((url) => typeof url === "string") &&
+    Object.values(config.pageCopy).every(isBilingual) &&
     !!config.brand &&
     typeof config.brand.name === "string" &&
     typeof config.brand.accent === "string" &&
@@ -208,6 +319,9 @@ function mergeConfig(saved: SiteConfig): SiteConfig {
   return {
     ...initialConfig,
     ...saved,
+    pageMeta: { ...initialConfig.pageMeta, ...saved.pageMeta },
+    pageCopy: { ...initialConfig.pageCopy, ...saved.pageCopy },
+    pageAssets: { ...initialConfig.pageAssets, ...saved.pageAssets },
     brand: { ...initialConfig.brand, ...saved.brand },
     hero: {
       ...initialConfig.hero,
@@ -346,4 +460,13 @@ export function useCMS() {
   const value = useContext(CMSContext);
   if (!value) throw new Error("useCMS must be used within CMSProvider");
   return value;
+}
+
+export function usePageTranslate(language: "en" | "ar") {
+  const { config } = useCMS();
+  return useCallback(
+    (english: string, arabic: string) =>
+      config.pageCopy[english]?.[language] ?? (language === "ar" ? arabic : english),
+    [config.pageCopy, language],
+  );
 }

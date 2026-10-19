@@ -1,10 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { ChartNoAxesColumnIncreasing, FlaskConical, Lightbulb, Search, TrendingUp } from "lucide-react";
+import {
+  ChartNoAxesColumnIncreasing,
+  FlaskConical,
+  Lightbulb,
+  Search,
+  TrendingUp,
+} from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Language } from "./types";
-import { translate } from "./types";
+import { usePageTranslate } from "@/lib/cms";
 
-const steps: { icon: LucideIcon; en: string; ar: string; descriptionEn: string; descriptionAr: string }[] = [
+const steps: {
+  icon: LucideIcon;
+  en: string;
+  ar: string;
+  descriptionEn: string;
+  descriptionAr: string;
+}[] = [
   {
     icon: Search,
     en: "Measure",
@@ -45,7 +57,7 @@ const steps: { icon: LucideIcon; en: string; ar: string; descriptionEn: string; 
 export function ShowcaseProcess({ language }: { language: Language }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
 
   useEffect(() => {
     const firstStep = sectionRef.current?.querySelector(".process-step");
@@ -94,7 +106,9 @@ export function ShowcaseProcess({ language }: { language: Language }) {
                   <Icon aria-hidden="true" />
                 </span>
               </div>
-              {index < steps.length - 1 && <span className="process-connector" aria-hidden="true" />}
+              {index < steps.length - 1 && (
+                <span className="process-connector" aria-hidden="true" />
+              )}
               <div className="process-copy" dir={language === "ar" ? "rtl" : "ltr"}>
                 <h3>{t(en, ar)}</h3>
                 <p>{t(descriptionEn, descriptionAr)}</p>

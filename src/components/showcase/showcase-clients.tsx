@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Language } from "./types";
-import { translate } from "./types";
-import { useCMS } from "@/lib/cms";
+import { useCMS, usePageTranslate } from "@/lib/cms";
 
 export function ShowcaseClients({ language }: { language: Language }) {
   const { config } = useCMS();
@@ -13,7 +12,7 @@ export function ShowcaseClients({ language }: { language: Language }) {
   const clientsRef = useRef<HTMLDivElement>(null);
   const autoNextRef = useRef(true);
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
 
   const scroll = (next: boolean) => {
     clientsRef.current?.scrollBy({
@@ -58,7 +57,9 @@ export function ShowcaseClients({ language }: { language: Language }) {
             className="gap-3 text-xs"
             onClick={() => setShowAllClients(!showAllClients)}
           >
-            {showAllClients ? t("Show carousel", "عرض متحرك") : t("View all Clients", "عرض كل العملاء")}
+            {showAllClients
+              ? t("Show carousel", "عرض متحرك")
+              : t("View all Clients", "عرض كل العملاء")}
             <ArrowUpRight />
           </Button>
         </div>
@@ -66,10 +67,13 @@ export function ShowcaseClients({ language }: { language: Language }) {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
             {clients.map((client, index) => (
               <img
-              key={client.id}
-              src={client.image}
+                key={client.id}
+                src={client.image}
                 className="w-full rounded-sm"
-                alt={client.name[language] || t(`Client brand ${index + 1}`, `العلامة التجارية ${index + 1}`)}
+                alt={
+                  client.name[language] ||
+                  t(`Client brand ${index + 1}`, `العلامة التجارية ${index + 1}`)
+                }
                 loading="lazy"
               />
             ))}
@@ -97,10 +101,13 @@ export function ShowcaseClients({ language }: { language: Language }) {
             <div className="client-track" ref={clientsRef} dir={ar ? "rtl" : "ltr"}>
               {clients.map((client, index) => (
                 <img
-              key={client.id}
+                  key={client.id}
                   className="client-logo"
                   src={client.image}
-                  alt={client.name[language] || t(`Client brand ${index + 1}`, `العلامة التجارية ${index + 1}`)}
+                  alt={
+                    client.name[language] ||
+                    t(`Client brand ${index + 1}`, `العلامة التجارية ${index + 1}`)
+                  }
                   loading="lazy"
                 />
               ))}

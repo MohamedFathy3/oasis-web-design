@@ -1,43 +1,46 @@
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import logo from "@/assets/logo.png.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
-import website from "@/assets/website.jpg.asset.json";
 import { ShowcaseFooter, ShowcaseHeader } from "@/components/showcase";
+import { loadSiteConfig } from "@/lib/cms-loader";
 import { services } from "@/lib/showcase-data";
 import type { Language, SectionId } from "@/components/showcase/types";
-import { translate } from "@/components/showcase/types";
 import { canonicalUrl } from "@/lib/seo";
-import { useCMS } from "@/lib/cms";
+import { useCMS, usePageTranslate } from "@/lib/cms";
 
 export const Route = createFileRoute("/services/")({
+  loader: async () => {
+    const config = await loadSiteConfig();
+    return { seo: config.pageMeta["services"] };
+  },
   component: ServicesPage,
-  head: () => ({
-    links: [{ rel: "canonical", href: canonicalUrl("/services") }],
-    meta: [
-      { title: "Our Services — Viral Zoom | خدمات فايرال زوم" },
-      {
-        name: "description",
-        content:
-          "Explore the creative, digital marketing and production services offered by Viral Zoom. اكتشف خدمات فايرال زوم الإبداعية والتسويقية.",
-      },
-      { property: "og:title", content: "خدمات التسويق الرقمي وتصميم المواقع | Viral Zoom" },
-      {
-        property: "og:description",
-        content:
-          "اكتشف خدمات تصميم المواقع والتسويق الرقمي وإدارة السوشيال ميديا والإنتاج الإبداعي من Viral Zoom.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: canonicalUrl("/services") },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "خدمات Viral Zoom الرقمية والإبداعية" },
-      {
-        name: "twitter:description",
-        content: "تصميم مواقع وتسويق رقمي وإنتاج محتوى لخدمة نمو الأعمال.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = loaderData?.seo;
+    const pageUrl = canonicalUrl("/services");
+    return {
+      links: [{ rel: "canonical", href: pageUrl }],
+      meta: [
+        { title: seo ? `${seo.title.en} | ${seo.title.ar}` : "" },
+        {
+          name: "description",
+          content: seo ? `${seo.description.en} ${seo.description.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        { property: "og:url", content: pageUrl },
+        {
+          property: "og:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        {
+          name: "twitter:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+      ],
+    };
+  },
 });
 
 function ServicesPage() {
@@ -46,7 +49,7 @@ function ServicesPage() {
   const [darkMode, setDarkMode] = useState(true);
   const navigate = useNavigate();
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
   const serviceItems = ready
     ? config.services
         .filter((item) => item.enabled)
@@ -122,7 +125,7 @@ function ServicesPage() {
         <section className="services-page-hero" aria-labelledby="services-page-title">
           <img
             className="services-page-hero-image"
-            src={website.url}
+            src={config.pageAssets["serviceFallback"]}
             alt={t("A creative digital project by Viral Zoom", "مشروع رقمي إبداعي من فايرال زوم")}
           />
           <div className="services-page-hero-shade" />
@@ -208,11 +211,7 @@ function ServicesPage() {
           </div>
         </section>
       </main>
-      <ShowcaseFooter
-        language={language}
-        logo={darkMode ? whiteLogo.url : logo.url}
-        onBackToTop={backToTop}
-      />
+      <ShowcaseFooter language={language} onBackToTop={backToTop} />
     </div>
   );
 }

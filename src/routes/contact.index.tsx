@@ -1,34 +1,45 @@
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowDownLeft } from "lucide-react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import logo from "@/assets/logo.png.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
-import website from "@/assets/website.jpg.asset.json";
-import worldMap from "@/assets/bg-2-e496b57f-842e-4cf1-8733-ba70e093aea4.png";
 import { ShowcaseContact, ShowcaseFooter, ShowcaseHeader } from "@/components/showcase";
 import type { Language, SectionId } from "@/components/showcase/types";
-import { translate } from "@/components/showcase/types";
+import { loadSiteConfig } from "@/lib/cms-loader";
+import { useCMS, usePageTranslate } from "@/lib/cms";
 import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/contact/")({
+  loader: async () => {
+    const config = await loadSiteConfig();
+    return { seo: config.pageMeta["contact"] };
+  },
   component: ContactPage,
-  head: () => ({
-    links: [{ rel: "canonical", href: canonicalUrl("/contact") }],
-    meta: [
-      { title: "Contact Viral Zoom | تواصل مع فايرال زوم" },
-      {
-        name: "description",
-        content:
-          "Have a project in mind? Get in touch with Viral Zoom. عندك مشروع في بالك؟ تواصل مع فايرال زوم.",
-      },
-      { property: "og:title", content: "Contact Viral Zoom | تواصل مع فايرال زوم" },
-      { property: "og:url", content: canonicalUrl("/contact") },
-      {
-        property: "og:description",
-        content: "Tell us what you are looking to create and let's start a conversation.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = loaderData?.seo;
+    const pageUrl = canonicalUrl("/contact");
+    return {
+      links: [{ rel: "canonical", href: pageUrl }],
+      meta: [
+        { title: seo ? `${seo.title.en} | ${seo.title.ar}` : "" },
+        {
+          name: "description",
+          content: seo ? `${seo.description.en} ${seo.description.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        { property: "og:url", content: pageUrl },
+        {
+          property: "og:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        {
+          name: "twitter:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+      ],
+    };
+  },
 });
 
 function ContactPage() {
@@ -36,7 +47,8 @@ function ContactPage() {
   const [darkMode, setDarkMode] = useState(true);
   const navigate = useNavigate();
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
+  const { config } = useCMS();
 
   useEffect(() => {
     try {
@@ -104,7 +116,7 @@ function ContactPage() {
         <section className="contact-page-hero" aria-labelledby="contact-page-title">
           <img
             className="contact-page-hero-image"
-            src={website.url}
+            src={config.pageAssets["aboutHero"]}
             alt={t("Creative digital work by Viral Zoom", "أعمال رقمية إبداعية من فايرال زوم")}
           />
           <div className="contact-page-hero-shade" />
@@ -138,7 +150,12 @@ function ContactPage() {
         </div>
 
         <section className="contact-map-section" aria-labelledby="contact-map-title">
-          <img className="contact-map-image" src={worldMap} alt="" aria-hidden="true" />
+          <img
+            className="contact-map-image"
+            src={config.pageAssets["contactWorldMap"]}
+            alt=""
+            aria-hidden="true"
+          />
           <div className="contact-map-shade" />
           <div className="section-inner contact-map-content">
             <div>
@@ -163,11 +180,7 @@ function ContactPage() {
           </div>
         </section>
       </main>
-      <ShowcaseFooter
-        language={language}
-        logo={darkMode ? whiteLogo.url : logo.url}
-        onBackToTop={backToTop}
-      />
+      <ShowcaseFooter language={language} onBackToTop={backToTop} />
     </div>
   );
 }

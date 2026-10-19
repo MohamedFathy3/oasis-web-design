@@ -10,33 +10,45 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import logo from "@/assets/logo.png.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
-import website from "@/assets/website.jpg.asset.json";
 import type { Language, SectionId } from "@/components/showcase/types";
 import { ShowcaseFooter, ShowcaseHeader } from "@/components/showcase";
-import { translate } from "@/components/showcase/types";
+import { loadSiteConfig } from "@/lib/cms-loader";
+import { useCMS, usePageTranslate } from "@/lib/cms";
 import { canonicalUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/about/")({
+  loader: async () => {
+    const config = await loadSiteConfig();
+    return { seo: config.pageMeta["about"] };
+  },
   component: AboutPage,
-  head: () => ({
-    links: [{ rel: "canonical", href: canonicalUrl("/about") }],
-    meta: [
-      { title: "About Viral Zoom — Creative & Digital Agency | من نحن" },
-      {
-        name: "description",
-        content:
-          "Meet Viral Zoom, a creative and digital agency combining strategy, design and technology to help brands grow. تعرف على فايرال زوم، وكالة إبداعية ورقمية تجمع الاستراتيجية والتصميم والتكنولوجيا لتنمية العلامات التجارية.",
-      },
-      { property: "og:title", content: "About Viral Zoom — Creative & Digital Agency" },
-      { property: "og:url", content: canonicalUrl("/about") },
-      {
-        property: "og:description",
-        content: "Creative thinking, smart strategy and standout execution for growing brands.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = loaderData?.seo;
+    const pageUrl = canonicalUrl("/about");
+    return {
+      links: [{ rel: "canonical", href: pageUrl }],
+      meta: [
+        { title: seo ? `${seo.title.en} | ${seo.title.ar}` : "" },
+        {
+          name: "description",
+          content: seo ? `${seo.description.en} ${seo.description.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        { property: "og:url", content: pageUrl },
+        {
+          property: "og:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        {
+          name: "twitter:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+      ],
+    };
+  },
 });
 
 const values = [
@@ -71,7 +83,8 @@ function AboutPage() {
   const [darkMode, setDarkMode] = useState(true);
   const navigate = useNavigate();
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
+  const { config } = useCMS();
 
   useEffect(() => {
     try {
@@ -158,7 +171,7 @@ function AboutPage() {
             </div>
             <div className="about-hero-art">
               <img
-                src={website.url}
+                src={config.pageAssets["aboutHero"]}
                 alt={t(
                   "A creative digital project by Viral Zoom",
                   "مشروع رقمي إبداعي من فايرال زوم",
@@ -234,8 +247,8 @@ function AboutPage() {
                   <span className="about-value-icon">
                     <Icon aria-hidden="true" />
                   </span>
-                  <h3>{title[language]}</h3>
-                  <p>{text[language]}</p>
+                  <h3>{t(title.en, title.ar)}</h3>
+                  <p>{t(text.en, text.ar)}</p>
                 </article>
               ))}
             </div>
@@ -291,11 +304,7 @@ function AboutPage() {
           </div>
         </section>
       </main>
-      <ShowcaseFooter
-        language={language}
-        logo={darkMode ? whiteLogo.url : logo.url}
-        onBackToTop={backToTop}
-      />
+      <ShowcaseFooter language={language} onBackToTop={backToTop} />
     </div>
   );
 }

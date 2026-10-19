@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import logo from "@/assets/logo.png.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
-import hero from "@/assets/hero.mp4.asset.json";
-import heroWebm from "@/assets/hero.webm.asset.json";
-import poster from "@/assets/poster.jpg.asset.json";
 import { ShowcaseFooter, ShowcaseHeader } from "@/components/showcase";
 import type { Language, SectionId } from "@/components/showcase/types";
 import {
@@ -14,37 +9,44 @@ import {
   projects,
   type ProjectCategoryId,
 } from "@/lib/projects";
+import { loadSiteConfig } from "@/lib/cms-loader";
 import { projectItemsFromConfig, useCMS } from "@/lib/cms";
 import { canonicalUrl } from "@/lib/seo";
-import { translate } from "@/components/showcase/types";
+import { usePageTranslate } from "@/lib/cms";
 
 export const Route = createFileRoute("/projects/")({
+  loader: async () => {
+    const config = await loadSiteConfig();
+    return { seo: config.pageMeta["projects"] };
+  },
   component: ProjectsPage,
-  head: () => ({
-    links: [{ rel: "canonical", href: canonicalUrl("/projects") }],
-    meta: [
-      { title: "أعمالنا في التسويق والتصميم | Viral Zoom" },
-      {
-        name: "description",
-        content:
-          "تصفح مشاريع Viral Zoom في السوشيال ميديا وتصميم المواقع والتطبيقات والهوية البصرية. اكتشف نماذج من أعمالنا الإبداعية.",
-      },
-      { property: "og:title", content: "أعمال Viral Zoom في التسويق والتصميم" },
-      {
-        property: "og:description",
-        content:
-          "مشاريع في السوشيال ميديا وتصميم المواقع والتطبيقات والهوية البصرية من Viral Zoom.",
-      },
-      { property: "og:type", content: "website" },
-      { property: "og:url", content: canonicalUrl("/projects") },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "أعمال Viral Zoom في التسويق والتصميم" },
-      {
-        name: "twitter:description",
-        content: "نماذج من أعمال السوشيال ميديا والمواقع والتطبيقات والهوية البصرية.",
-      },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = loaderData?.seo;
+    const pageUrl = canonicalUrl("/projects");
+    return {
+      links: [{ rel: "canonical", href: pageUrl }],
+      meta: [
+        { title: seo ? `${seo.title.en} | ${seo.title.ar}` : "" },
+        {
+          name: "description",
+          content: seo ? `${seo.description.en} ${seo.description.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        { property: "og:url", content: pageUrl },
+        {
+          property: "og:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+        { property: "og:type", content: "website" },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: seo ? `${seo.ogTitle.en} | ${seo.ogTitle.ar}` : "" },
+        {
+          name: "twitter:description",
+          content: seo ? `${seo.ogDescription.en} ${seo.ogDescription.ar}`.slice(0, 300) : "",
+        },
+      ],
+    };
+  },
 });
 
 function ProjectsPage() {
@@ -54,7 +56,7 @@ function ProjectsPage() {
   const [activeCategory, setActiveCategory] = useState<ProjectCategoryId | "all">("all");
   const navigate = useNavigate();
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
   const allProjects = useMemo(
     () =>
       ready ? projectItemsFromConfig(config.portfolio.filter((item) => item.enabled)) : projects,
@@ -130,7 +132,7 @@ function ProjectsPage() {
         <section
           className="projects-hero"
           aria-labelledby="projects-title"
-          style={{ backgroundImage: `url("${poster.url}")` }}
+          style={{ backgroundImage: `url("${config.pageAssets["projectsVideoPoster"]}")` }}
         >
           <video
             className="projects-hero-video"
@@ -138,12 +140,12 @@ function ProjectsPage() {
             muted
             loop
             playsInline
-            poster={poster.url}
+            poster={config.pageAssets["projectsVideoPoster"]}
             aria-hidden="true"
             tabIndex={-1}
           >
-            <source src={heroWebm.url} type="video/webm" />
-            <source src={hero.url} type="video/mp4" />
+            <source src={config.pageAssets["projectsVideoWebm"]} type="video/webm" />
+            <source src={config.pageAssets["projectsVideoMp4"]} type="video/mp4" />
           </video>
           <div className="projects-hero-overlay" aria-hidden="true" />
           <div className="section-inner projects-hero-inner">
@@ -274,7 +276,6 @@ function ProjectsPage() {
       </main>
       <ShowcaseFooter
         language={language}
-        logo={darkMode ? whiteLogo.url : logo.url}
         onBackToTop={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       />
     </div>

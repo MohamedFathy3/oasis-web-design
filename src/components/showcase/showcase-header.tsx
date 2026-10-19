@@ -2,9 +2,8 @@ import { useState } from "react";
 import { Globe2, Menu, Moon, Sun, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { useCMS } from "@/lib/cms";
+import { useCMS, usePageTranslate } from "@/lib/cms";
 import type { Language, SectionId } from "./types";
-import { translate } from "./types";
 
 type Props = {
   language: Language;
@@ -35,7 +34,7 @@ export function ShowcaseHeader({
   const { config } = useCMS();
   const [menuOpen, setMenuOpen] = useState(false);
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
 
   const navigate = (id: SectionId) => {
     onNavigate(id);
@@ -48,14 +47,21 @@ export function ShowcaseHeader({
         <Button
           variant="ghost"
           className="h-auto justify-start p-0"
-          aria-label="Viral Zoom home"
+          aria-label={t("Viral Zoom home", "الصفحة الرئيسية — فايرال زوم")}
           onClick={() => navigate("home")}
         >
-          <img className="brand-logo" src={darkMode ? config.brand.whiteLogo : config.brand.logo} alt={config.brand.name} />
+          <img
+            className="brand-logo"
+            src={darkMode ? config.brand.whiteLogo : config.brand.logo}
+            alt={config.brand.name}
+          />
         </Button>
         <nav className="desktop-nav" aria-label={t("Main navigation", "القائمة الرئيسية")}>
           {navigation.map((item) =>
-            item.id === "about" || item.id === "contact" || item.id === "services" || item.id === "portfolio" ? (
+            item.id === "about" ||
+            item.id === "contact" ||
+            item.id === "services" ||
+            item.id === "portfolio" ? (
               <Link
                 to={
                   item.id === "about"
@@ -69,7 +75,7 @@ export function ShowcaseHeader({
                 key={item.id}
                 className={`nav-item px-0 ${activeSection === item.id ? "active" : ""}`}
               >
-                {item[language]}
+                {t(item.en, item.ar)}
               </Link>
             ) : (
               <Button
@@ -78,7 +84,7 @@ export function ShowcaseHeader({
                 className={`nav-item px-0 ${activeSection === item.id ? "active" : ""}`}
                 onClick={() => navigate(item.id as SectionId)}
               >
-                {item[language]}
+                {t(item.en, item.ar)}
               </Button>
             ),
           )}
@@ -90,7 +96,9 @@ export function ShowcaseHeader({
             className="shrink-0"
             onClick={onToggleTheme}
             aria-label={
-              darkMode ? t("Switch to light mode", "تفعيل الوضع الفاتح") : t("Switch to dark mode", "تفعيل الوضع الداكن")
+              darkMode
+                ? t("Switch to light mode", "تفعيل الوضع الفاتح")
+                : t("Switch to dark mode", "تفعيل الوضع الداكن")
             }
             title={darkMode ? t("Light mode", "الوضع الفاتح") : t("Dark mode", "الوضع الداكن")}
             aria-pressed={darkMode}
@@ -121,7 +129,10 @@ export function ShowcaseHeader({
       {menuOpen && (
         <nav className="mobile-nav">
           {navigation.map((item) =>
-            item.id === "about" || item.id === "contact" || item.id === "services" || item.id === "portfolio" ? (
+            item.id === "about" ||
+            item.id === "contact" ||
+            item.id === "services" ||
+            item.id === "portfolio" ? (
               <Link
                 to={
                   item.id === "about"
@@ -136,11 +147,11 @@ export function ShowcaseHeader({
                 className="mobile-nav-link"
                 onClick={() => setMenuOpen(false)}
               >
-                {item[language]}
+                {t(item.en, item.ar)}
               </Link>
             ) : (
               <Button key={item.id} variant="ghost" onClick={() => navigate(item.id as SectionId)}>
-                {item[language]}
+                {t(item.en, item.ar)}
               </Button>
             ),
           )}

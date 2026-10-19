@@ -2,29 +2,34 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { ArrowDown, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import website from "@/assets/website.jpg.asset.json";
-import { useCMS } from "@/lib/cms";
+import { useCMS, usePageTranslate } from "@/lib/cms";
 import type { Language } from "./types";
-import { translate } from "./types";
 
 export function ShowcaseServices({ language }: { language: Language }) {
   const { config } = useCMS();
   const services = config.services.filter((service) => service.enabled);
   const servicesRef = useRef<HTMLDivElement>(null);
   const autoNextRef = useRef(true);
-  const pointerStartRef = useRef<{ x: number; y: number; scrollLeft: number; pointerId: number } | null>(null);
+  const pointerStartRef = useRef<{
+    x: number;
+    y: number;
+    scrollLeft: number;
+    pointerId: number;
+  } | null>(null);
   const isDraggingRef = useRef(false);
   const suppressClickRef = useRef(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const t = usePageTranslate(language);
 
   const getStep = (track: HTMLDivElement) => {
     const firstCard = track.children.item(0);
     const secondCard = track.children.item(1);
     if (!firstCard || !secondCard) return 364;
-    return Math.abs(secondCard.getBoundingClientRect().left - firstCard.getBoundingClientRect().left);
+    return Math.abs(
+      secondCard.getBoundingClientRect().left - firstCard.getBoundingClientRect().left,
+    );
   };
 
   const scroll = (next: boolean) => {
@@ -136,8 +141,11 @@ export function ShowcaseServices({ language }: { language: Language }) {
             <div className="services-intro-image-wrap">
               <img
                 className="services-intro-image"
-                src={website.url}
-                alt={t("Creative digital experience designed by Viral Zoom", "تجربة رقمية إبداعية من فايرال زوم")}
+                src={config.pageAssets["serviceFallback"]}
+                alt={t(
+                  "Creative digital experience designed by Viral Zoom",
+                  "تجربة رقمية إبداعية من فايرال زوم",
+                )}
               />
               <span className="services-image-caption">
                 {t("Strategy meets creativity", "الاستراتيجية تلتقي بالإبداع")}
@@ -145,7 +153,11 @@ export function ShowcaseServices({ language }: { language: Language }) {
             </div>
             <div className="services-image-stamp" aria-hidden="true">
               <span>VZ</span>
-              <span>CREATIVE<br />STUDIO</span>
+              <span>
+                CREATIVE
+                <br />
+                STUDIO
+              </span>
             </div>
           </div>
         </div>
@@ -154,7 +166,7 @@ export function ShowcaseServices({ language }: { language: Language }) {
         <div className="section-heading">
           <div>
             <p className="section-eyebrow">{t("WHAT WE DO", "ماذا نقدم")}</p>
-          <h2 id="services-title">{t("Our Services", "خدماتنا")}</h2>
+            <h2 id="services-title">{t("Our Services", "خدماتنا")}</h2>
             <Link className="services-full-page-link" to="/services">
               {t("View all services", "شوف كل خدماتنا")}
               {ar ? <ChevronLeft aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
