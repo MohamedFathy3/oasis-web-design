@@ -9,8 +9,10 @@ import {
 } from "react";
 import {
   ArrowDownLeft,
+  ArrowDown,
   ArrowLeft,
   ArrowRight,
+  ArrowUp,
   ArrowUpRight,
   BarChart3,
   Check,
@@ -904,9 +906,32 @@ function AdminPage() {
       return categories.some((category) => category === "branding" || category === "ui-ux");
     return categories.includes(projectCategoryFilter);
   });
+  const moveRecord = (id: string, direction: -1 | 1) => {
+    const visibleIndex = filtered.findIndex((item) => item.id === id);
+    const target = filtered[visibleIndex + direction];
+    if (!target) return;
+
+    const next = [...records];
+    const currentIndex = next.findIndex((item) => item.id === id);
+    const targetIndex = next.findIndex((item) => item.id === target.id);
+    [next[currentIndex], next[targetIndex]] = [next[targetIndex]!, next[currentIndex]!];
+    update(editorGroup, next);
+  };
   const selected = records.find((x) => x.id === selectedId);
   const selectedVideoLinks =
     videoEditorType === "reels" ? (selected?.reelsVideos ?? []) : (selected?.promoVideos ?? []);
+  const moveSelectedVideo = (index: number, direction: -1 | 1) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= selectedVideoLinks.length || !selected) return;
+
+    const videos = [...selectedVideoLinks];
+    [videos[index], videos[targetIndex]] = [videos[targetIndex]!, videos[index]!];
+    updateRecord(
+      editorGroup,
+      selected.id,
+      videoEditorType === "reels" ? { reelsVideos: videos } : { promoVideos: videos },
+    );
+  };
   const listEditor = (group: "services" | "portfolio" | "clients") => (
     <div className="vz-list-layout">
       <div className="vz-record-list">
@@ -953,28 +978,51 @@ function AdminPage() {
           </div>
         )}
         <div className="vz-record-items">
-          {filtered.map((item) => (
-            <button
-              className={`vz-record${selectedId === item.id ? " selected" : ""}`}
-              key={item.id}
-              onClick={() => setSelectedId(item.id)}
-            >
-              <span className="vz-record-thumb">
-                {item.image ? <img src={item.image} alt="" /> : <ImagePlus size={18} />}
-              </span>
-              <span className="vz-record-copy">
-                <b>{item.name[lang] || item.name.en || t.newItem}</b>
-                <small>{item.enabled ? t.enabled : t.hide}</small>
-                {group === "portfolio" && item.projectCategory && (
-                  <small className="vz-record-category">
-                    {projectCategories.find((category) => category.id === item.projectCategory)?.[
-                      lang
-                    ] ?? item.projectCategory}
-                  </small>
-                )}
-              </span>
-              {rtl ? <ArrowLeft size={15} /> : <ArrowRight size={15} />}
-            </button>
+          {filtered.map((item, index) => (
+            <div className="vz-record-row" key={item.id}>
+              <button
+                className={`vz-record${selectedId === item.id ? " selected" : ""}`}
+                onClick={() => setSelectedId(item.id)}
+              >
+                <span className="vz-record-thumb">
+                  {item.image ? <img src={item.image} alt="" /> : <ImagePlus size={18} />}
+                </span>
+                <span className="vz-record-copy">
+                  <b>{item.name[lang] || item.name.en || t.newItem}</b>
+                  <small>{item.enabled ? t.enabled : t.hide}</small>
+                  {group === "portfolio" && item.projectCategory && (
+                    <small className="vz-record-category">
+                      {projectCategories.find((category) => category.id === item.projectCategory)?.[
+                        lang
+                      ] ?? item.projectCategory}
+                    </small>
+                  )}
+                </span>
+                {rtl ? <ArrowLeft size={15} /> : <ArrowRight size={15} />}
+              </button>
+              {group === "portfolio" && (
+                <span className="vz-record-order">
+                  <button
+                    type="button"
+                    aria-label={`${lang === "ar" ? "رفع ترتيب" : "Move up"} ${item.name[lang] || item.name.en || t.newItem}`}
+                    title={lang === "ar" ? "تقديم العمل" : "Move work up"}
+                    disabled={index === 0}
+                    onClick={() => moveRecord(item.id, -1)}
+                  >
+                    <ArrowUp size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`${lang === "ar" ? "خفض ترتيب" : "Move down"} ${item.name[lang] || item.name.en || t.newItem}`}
+                    title={lang === "ar" ? "تأخير العمل" : "Move work down"}
+                    disabled={index === filtered.length - 1}
+                    onClick={() => moveRecord(item.id, 1)}
+                  >
+                    <ArrowDown size={12} />
+                  </button>
+                </span>
+              )}
+            </div>
           ))}
           {!filtered.length && <div className="vz-empty">{t.empty}</div>}
         </div>
@@ -1158,6 +1206,26 @@ function AdminPage() {
                   </small>
                   {selectedVideoLinks.map((video, index) => (
                     <div className="vz-panel" key={`${video}-${index}`}>
+                      <span className="vz-record-order">
+                        <button
+                          type="button"
+                          aria-label={`${lang === "ar" ? "رفع ترتيب الفيديو" : "Move video up"} ${index + 1}`}
+                          title={lang === "ar" ? "تقديم الفيديو" : "Move video up"}
+                          disabled={index === 0}
+                          onClick={() => moveSelectedVideo(index, -1)}
+                        >
+                          <ArrowUp size={12} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`${lang === "ar" ? "خفض ترتيب الفيديو" : "Move video down"} ${index + 1}`}
+                          title={lang === "ar" ? "تأخير الفيديو" : "Move video down"}
+                          disabled={index === selectedVideoLinks.length - 1}
+                          onClick={() => moveSelectedVideo(index, 1)}
+                        >
+                          <ArrowDown size={12} />
+                        </button>
+                      </span>
                       {field(
                         `${lang === "ar" ? "رابط الفيديو" : "Video URL"} ${index + 1}`,
                         video,

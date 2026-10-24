@@ -626,16 +626,29 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         : { count: 1, expires: now + 10 * 60 * 1000 },
     );
 
-    const db = await getDatabase();
-    await db.contactMessage.create({
-      data: {
-        id: randomUUID(),
-        name: name.trim(),
-        email: email.trim(),
-        subject: subject.trim(),
-        message: message.trim(),
-      },
-    });
+    try {
+      const db = await getDatabase();
+      await db.contactMessage.create({
+        data: {
+          id: randomUUID(),
+          name: name.trim(),
+          email: email.trim(),
+          subject: subject.trim(),
+          message: message.trim(),
+        },
+      });
+    } catch (error) {
+      console.error("Could not save contact message to MySQL:", error);
+      return json(
+        {
+          sent: false,
+          saved: false,
+          error:
+            "Could not save your message. Verify the contact_messages table and the app database connection.",
+        },
+        503,
+      );
+    }
 
     const smtpUser = env["SMTP_USER"]?.trim();
     const smtpPassword = env["SMTP_PASSWORD"];

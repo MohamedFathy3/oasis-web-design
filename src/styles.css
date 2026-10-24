@@ -341,8 +341,8 @@ html { scroll-behavior: auto; }
 .showcase-banner {
   position: relative;
   z-index: 0;
-  height: clamp(300px, 48vh, 560px);
-  min-height: 300px;
+  height: clamp(360px, 60vh, 680px);
+  min-height: 360px;
   margin: 0;
   clip-path: inset(0);
   background: #1a0b4b;
@@ -468,7 +468,7 @@ html { scroll-behavior: auto; }
  .process-step:nth-child(4) .process-connector { animation-delay: 3.25s; }
 }
 @keyframes process-line-in-vertical { to { transform: scaleY(1); } }
-@media(max-width:800px) { .process-section { z-index: 2; }.showcase-banner { z-index: 1; height: clamp(240px, 42vh, 360px); min-height: 240px; clip-path: none; }.showcase-banner-image { position: absolute; height: 100%; }.contact-section { z-index: 1; margin-top: 0; padding-block: 52px; }.site-footer { z-index: 2; } }
+@media(max-width:800px) { .process-section { z-index: 2; }.showcase-banner { z-index: 1; height: clamp(300px, 52vh, 440px); min-height: 300px; clip-path: none; }.showcase-banner-image { position: absolute; height: 100%; }.contact-section { z-index: 1; margin-top: 0; padding-block: 52px; }.site-footer { z-index: 2; } }
 @media(prefers-reduced-motion:reduce) { .process-section { z-index: auto; }.showcase-banner { z-index: auto; }.showcase-banner-image { position: absolute; height: 100%; transform: none; will-change: auto; }.contact-section { z-index: auto; margin-top: 0; padding-block: clamp(56px, 6vw, 80px); }.site-footer { z-index: auto; margin-top: 0; } }
 @media(max-width:800px) and (prefers-reduced-motion:reduce) { .contact-section { padding: 52px 0; } }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior: auto; } * { transition: none !important; animation-duration: .01ms !important; animation-delay: 0ms !important; } .process-icon, .process-copy { opacity: 1; transform: none; } .process-connector { transform: none; } }

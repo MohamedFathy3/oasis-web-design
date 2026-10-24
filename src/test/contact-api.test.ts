@@ -111,6 +111,26 @@ describe("Contact API", () => {
     }
   });
 
+  it("returns a JSON database error instead of a successful response when saving fails", async () => {
+    createMessageMock.mockRejectedValueOnce(new Error("Table does not exist"));
+
+    const response = await handleApiRequest(
+      contactRequest({
+        name: "Visitor",
+        email: "visitor@example.com",
+        subject: "Project",
+        message: "Hello",
+      }),
+    );
+
+    expect(response?.status).toBe(503);
+    await expect(response?.json()).resolves.toMatchObject({
+      sent: false,
+      saved: false,
+      error: expect.stringContaining("contact_messages"),
+    });
+  });
+
   it("reports success only when SMTP accepts the configured recipient", async () => {
     vi.stubEnv("SMTP_USER", "info@viralzoom.agency");
     vi.stubEnv("SMTP_PASSWORD", "test-password");

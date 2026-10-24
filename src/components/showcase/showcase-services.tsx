@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { ArrowDown, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import homeCardImage from "@/assets/viralzoom-home-card-replacement.png";
+import homeCardImage from "@/assets/viralzoom-home-.jpg.jpeg";
 import { Button } from "@/components/ui/button";
 import { getPageCopy, useCMS } from "@/lib/cms";
 import type { Language } from "./types";

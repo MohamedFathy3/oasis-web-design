@@ -1381,6 +1381,12 @@
   gap: 3px;
   padding: 8px;
 }
+.vz-record-row {
+  display: flex;
+  min-width: 0;
+  align-items: stretch;
+  gap: 3px;
+}
 .vz-record-filters {
   display: flex;
   align-items: center;
@@ -1416,7 +1422,9 @@
 .vz-record {
   display: flex;
   width: 100%;
+  min-width: 0;
   min-height: 61px;
+  flex: 1;
   align-items: center;
   gap: 11px;
   border: 0;
@@ -1428,6 +1436,30 @@
   transition:
     background 140ms ease,
     color 140ms ease;
+}
+.vz-record-order {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+.vz-record-order button {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 1px solid #ece8ee;
+  border-radius: 5px;
+  color: #69499e;
+  background: #fff;
+}
+.vz-record-order button:hover:not(:disabled) {
+  background: #f6f2f9;
+}
+.vz-record-order button:disabled {
+  color: #c9c3cc;
+  cursor: not-allowed;
 }
 .vz-record:hover,
 .vz-record.selected {

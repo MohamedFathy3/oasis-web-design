@@ -38,12 +38,17 @@ export function ShowcaseContact({ language }: { language: Language }) {
             ? "الخادم لم يؤكد حفظ الرسالة. قد يكون الإصدار المنشور قديمًا؛ حدّث الموقع أو راسلنا مباشرة."
             : "The server did not confirm saving your message. The deployed version may be outdated; update the site or email us directly.",
         );
-      const result = (await response.json()) as { sent?: boolean; saved?: boolean };
+      const result = (await response.json()) as {
+        sent?: boolean;
+        saved?: boolean;
+        error?: string;
+      };
       if (result.saved !== true)
         throw new Error(
-          language === "ar"
-            ? "لم يتم حفظ الرسالة؛ ربما اعتبرها النموذج رسالة غير مرغوبة. راسلنا مباشرة أو حاول مرة أخرى."
-            : "The message was not saved; the form may have flagged it as spam. Please email us directly or try again.",
+          result.error ||
+            (language === "ar"
+              ? "لم يتم حفظ الرسالة؛ ربما اعتبرها النموذج رسالة غير مرغوبة. راسلنا مباشرة أو حاول مرة أخرى."
+              : "The message was not saved; the form may have flagged it as spam. Please email us directly or try again."),
         );
       if (!response.ok || result.sent !== true)
         throw new Error("Contact message could not be saved.");
