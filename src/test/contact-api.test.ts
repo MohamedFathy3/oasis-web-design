@@ -63,7 +63,7 @@ describe("Contact API", () => {
     const response = await handleApiRequest(contactRequest({ website: "bot-filled-this" }));
 
     expect(response?.status).toBe(200);
-    await expect(response?.json()).resolves.toEqual({ sent: true });
+    await expect(response?.json()).resolves.toEqual({ sent: true, saved: false });
   });
 
   it("rejects invalid email addresses", async () => {
@@ -93,7 +93,11 @@ describe("Contact API", () => {
       );
 
       expect(response?.status).toBe(201);
-      await expect(response?.json()).resolves.toEqual({ sent: true, emailSent: false });
+      await expect(response?.json()).resolves.toEqual({
+        sent: true,
+        saved: true,
+        emailSent: false,
+      });
       expect(createMessageMock).toHaveBeenCalledWith({
         data: expect.objectContaining({
           name: "Visitor",
@@ -128,7 +132,11 @@ describe("Contact API", () => {
       );
 
       expect(response?.status).toBe(201);
-      await expect(response?.json()).resolves.toEqual({ sent: true, emailSent: true });
+      await expect(response?.json()).resolves.toEqual({
+        sent: true,
+        saved: true,
+        emailSent: true,
+      });
     } finally {
       vi.unstubAllEnvs();
     }
@@ -155,7 +163,11 @@ describe("Contact API", () => {
       );
 
       expect(response?.status).toBe(201);
-      await expect(response?.json()).resolves.toEqual({ sent: true, emailSent: false });
+      await expect(response?.json()).resolves.toEqual({
+        sent: true,
+        saved: true,
+        emailSent: false,
+      });
     } finally {
       vi.unstubAllEnvs();
     }
@@ -167,6 +179,34 @@ describe("Contact API", () => {
     );
 
     expect(response?.status).toBe(401);
+  });
+
+  it("returns a JSON setup error when the inbox table is unavailable", async () => {
+    vi.stubEnv("ADMIN_PASSWORD", "test-admin-password");
+    findMessagesMock.mockRejectedValueOnce(new Error("Table does not exist"));
+
+    try {
+      const login = await handleApiRequest(
+        new Request("https://viralzoom.agency/api/auth/login", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ email: "admin@admin.com", password: "test-admin-password" }),
+        }),
+      );
+      const cookie = login?.headers.get("set-cookie")?.split(";")[0];
+      expect(cookie).toBeTruthy();
+
+      const response = await handleApiRequest(
+        new Request(contactUrl, { headers: { cookie: cookie! } }),
+      );
+
+      expect(response?.status).toBe(503);
+      await expect(response?.json()).resolves.toEqual({
+        error: "Could not load messages. Verify the contact_messages table in the app database.",
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it("lists messages and supports authenticated read and delete actions", async () => {

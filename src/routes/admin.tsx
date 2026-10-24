@@ -398,6 +398,15 @@ function AdminPage() {
       }
       fetch("/api/contact", { credentials: "same-origin" })
         .then(async (response) => {
+          const contentType = response.headers.get("content-type") ?? "";
+          if (!contentType.includes("application/json")) {
+            await response.text();
+            throw new Error(
+              lang === "ar"
+                ? `واجهة الرسائل رجّعت صفحة HTML بدل بياناتها (HTTP ${response.status}). انشر آخر إصدار من التطبيق وتأكد أن خادم Node يعمل.`
+                : `The messages API returned an HTML page instead of data (HTTP ${response.status}). Deploy the latest app version and verify the Node server is running.`,
+            );
+          }
           const result = (await response.json()) as {
             messages?: ContactMessage[];
             error?: string;
@@ -425,7 +434,7 @@ function AdminPage() {
       active = false;
       window.clearInterval(refreshInterval);
     };
-  }, [authed, messagesRefresh]);
+  }, [authed, lang, messagesRefresh]);
   const sectionTitle = t[section];
   const count = useMemo(
     () => ({

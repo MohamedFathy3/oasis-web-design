@@ -503,14 +503,24 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
 
   if (url.pathname === "/api/contact" && method === "GET") {
     if (!requireAdmin(request)) return json({ error: "Unauthorized" }, 401);
-    const db = await getDatabase();
-    const messages = await db.contactMessage.findMany({
-      orderBy: { createdAt: "desc" },
-    });
-    return json({
-      messages,
-      unreadCount: messages.filter((message) => !message.isRead).length,
-    });
+    try {
+      const db = await getDatabase();
+      const messages = await db.contactMessage.findMany({
+        orderBy: { createdAt: "desc" },
+      });
+      return json({
+        messages,
+        unreadCount: messages.filter((message) => !message.isRead).length,
+      });
+    } catch (error) {
+      console.error("Could not load contact messages from MySQL:", error);
+      return json(
+        {
+          error: "Could not load messages. Verify the contact_messages table in the app database.",
+        },
+        503,
+      );
+    }
   }
 
   const contactMessageResource = url.pathname.match(/^\/api\/contact\/([^/]+)$/);
@@ -519,8 +529,6 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     const id = contactMessageResource[1]!;
     if (!/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(id))
       return json({ error: "Not found" }, 404);
-    const db = await getDatabase();
-
     if (method === "PATCH") {
       let body: unknown;
       try {
@@ -534,16 +542,28 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         typeof (body as { isRead?: unknown }).isRead !== "boolean"
       )
         return json({ error: "Invalid request" }, 400);
-      const result = await db.contactMessage.updateMany({
-        where: { id },
-        data: { isRead: (body as { isRead: boolean }).isRead },
-      });
-      return result.count ? json({ updated: true }) : json({ error: "Not found" }, 404);
+      try {
+        const db = await getDatabase();
+        const result = await db.contactMessage.updateMany({
+          where: { id },
+          data: { isRead: (body as { isRead: boolean }).isRead },
+        });
+        return result.count ? json({ updated: true }) : json({ error: "Not found" }, 404);
+      } catch (error) {
+        console.error("Could not update contact message:", error);
+        return json({ error: "Could not update message. Verify the contact_messages table." }, 503);
+      }
     }
 
     if (method === "DELETE") {
-      const result = await db.contactMessage.deleteMany({ where: { id } });
-      return result.count ? json({ deleted: true }) : json({ error: "Not found" }, 404);
+      try {
+        const db = await getDatabase();
+        const result = await db.contactMessage.deleteMany({ where: { id } });
+        return result.count ? json({ deleted: true }) : json({ error: "Not found" }, 404);
+      } catch (error) {
+        console.error("Could not delete contact message:", error);
+        return json({ error: "Could not delete message. Verify the contact_messages table." }, 503);
+      }
     }
 
     return json({ error: "Method not allowed" }, 405, { Allow: "PATCH, DELETE" });
@@ -569,7 +589,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       return json({ error: "Invalid request" }, 400);
     const submission = body as Record<string, unknown>;
     if (typeof submission["website"] === "string" && submission["website"].trim())
-      return json({ sent: true });
+      return json({ sent: true, saved: false });
 
     const { name, email, subject, message } = submission;
     if (
@@ -634,7 +654,7 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       console.warn(
         "Contact message saved to the dashboard; SMTP email notification is not configured.",
       );
-      return json({ sent: true, emailSent: false }, 201);
+      return json({ sent: true, saved: true, emailSent: false }, 201);
     }
 
     try {
@@ -664,12 +684,12 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
           rejected: info.rejected,
           response: info.response,
         });
-        return json({ sent: true, emailSent: false }, 201);
+        return json({ sent: true, saved: true, emailSent: false }, 201);
       }
-      return json({ sent: true, emailSent: true }, 201);
+      return json({ sent: true, saved: true, emailSent: true }, 201);
     } catch (error) {
       console.error("Contact email delivery failed:", error);
-      return json({ sent: true, emailSent: false }, 201);
+      return json({ sent: true, saved: true, emailSent: false }, 201);
     }
   }
 

@@ -8,6 +8,7 @@ import { getPageCopy, useCMS } from "@/lib/cms";
 export function ShowcaseContact({ language }: { language: Language }) {
   const { config } = useCMS();
   const [submission, setSubmission] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [submissionError, setSubmissionError] = useState("");
   const contactPhone =
     config.contact.phone || getPageCopy(config, "contact", "phoneFallback", language);
   const copy = (key: string) => getPageCopy(config, "common", key, language);
@@ -18,6 +19,7 @@ export function ShowcaseContact({ language }: { language: Language }) {
     const form = event.currentTarget;
     const data = new FormData(form);
     setSubmission("sending");
+    setSubmissionError("");
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
@@ -30,12 +32,26 @@ export function ShowcaseContact({ language }: { language: Language }) {
           website: data.get("website"),
         }),
       });
-      const result = (await response.json()) as { sent?: boolean };
+      const contentType = response.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json"))
+        throw new Error(
+          language === "ar"
+            ? "الخادم لم يؤكد حفظ الرسالة. قد يكون الإصدار المنشور قديمًا؛ حدّث الموقع أو راسلنا مباشرة."
+            : "The server did not confirm saving your message. The deployed version may be outdated; update the site or email us directly.",
+        );
+      const result = (await response.json()) as { sent?: boolean; saved?: boolean };
+      if (result.saved !== true)
+        throw new Error(
+          language === "ar"
+            ? "لم يتم حفظ الرسالة؛ ربما اعتبرها النموذج رسالة غير مرغوبة. راسلنا مباشرة أو حاول مرة أخرى."
+            : "The message was not saved; the form may have flagged it as spam. Please email us directly or try again.",
+        );
       if (!response.ok || result.sent !== true)
-        throw new Error("Contact message could not be sent.");
+        throw new Error("Contact message could not be saved.");
       form.reset();
       setSubmission("success");
-    } catch {
+    } catch (error) {
+      setSubmissionError(error instanceof Error ? error.message : "");
       setSubmission("error");
     }
   };
@@ -147,15 +163,11 @@ export function ShowcaseContact({ language }: { language: Language }) {
                 ? getPageCopy(config, "common", "contactFormSending", language)
                 : copy("contactSubmit")}
             </button>
-            <p
-              className="contact-form-note contact-field-wide"
-              role="status"
-              aria-live="polite"
-            >
+            <p className="contact-form-note contact-field-wide" role="status" aria-live="polite">
               {submission === "success"
                 ? getPageCopy(config, "common", "contactFormSuccess", language)
                 : submission === "error"
-                  ? getPageCopy(config, "common", "contactFormError", language)
+                  ? submissionError || getPageCopy(config, "common", "contactFormError", language)
                   : copy("contactFormNote")}
             </p>
           </form>
