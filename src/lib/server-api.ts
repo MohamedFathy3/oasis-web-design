@@ -405,7 +405,7 @@ const typeByExtension: Record<string, string> = {
 };
 
 function publicOrigin() {
-  const configured = env["PUBLIC_SITE_URL"]?.trim() || "https://viralzoom.tech";
+  const configured = env["PUBLIC_SITE_URL"]?.trim() || "https://viralzoom.agency";
   try {
     const url = new URL(configured);
     return url.protocol === "https:" && url.pathname === "/" && !url.username && !url.password
@@ -541,13 +541,14 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
     }
 
     const smtpUser = env["SMTP_USER"]?.trim();
-    const smtpPassword = env["SMTP_PASSWORD"] || ':1P2VI!Dokugitf';
+    const smtpPassword = env["SMTP_PASSWORD"];
     const host = env["SMTP_HOST"]?.trim() || "smtp.hostinger.com";
     const port = Number(env["SMTP_PORT"] || 465);
     const recipient = env["CONTACT_EMAIL"]?.trim() || "info@viralzoom.agency";
     if (
       !smtpUser ||
       !smtpPassword ||
+      !smtpPassword.trim() ||
       !host ||
       !Number.isInteger(port) ||
       port < 1 ||
@@ -584,13 +585,25 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         socketTimeout: 15000,
         auth: { user: smtpUser, pass: smtpPassword },
       });
-      await transport.sendMail({
+      const info = await transport.sendMail({
         from: smtpUser,
         to: recipient,
         replyTo: { name: name.trim(), address: email.trim() },
         subject: `Website contact: ${subject.trim() || "New message"}`,
         text: `Name: ${name.trim()}\nEmail: ${email.trim()}\n\n${message.trim()}`,
       });
+      const acceptedBySmtp = info.accepted.some(
+        (address) => address.toLowerCase() === recipient.toLowerCase(),
+      );
+      if (!acceptedBySmtp) {
+        console.error("Contact email was not accepted by the SMTP server.", {
+          messageId: info.messageId,
+          accepted: info.accepted,
+          rejected: info.rejected,
+          response: info.response,
+        });
+        return json({ error: "Your message could not be delivered. Please try again later." }, 502);
+      }
       return json({ sent: true });
     } catch (error) {
       console.error("Contact email delivery failed:", error);

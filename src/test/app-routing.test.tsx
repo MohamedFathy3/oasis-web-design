@@ -104,7 +104,7 @@ describe("App routing", () => {
   it("identifies video media URLs without excluding image URLs", () => {
     expect(isVideoMediaUrl("/media/video/reel.mp4")).toBe(true);
     expect(isVideoMediaUrl("https://cdn.example.com/reel.webm?token=123")).toBe(true);
-    expect(isVideoMediaUrl("blob:https://viralzoom.tech/video-id")).toBe(true);
+    expect(isVideoMediaUrl("blob:https://viralzoom.agency/video-id")).toBe(true);
     expect(isVideoMediaUrl("/media/portfolio/project.webp")).toBe(false);
     expect(isVideoMediaUrl("https://cdn.example.com/client-logo.svg")).toBe(false);
   });
@@ -152,9 +152,9 @@ describe("App routing", () => {
     expect(project.socialMediaShowcase.communityGrowth.length).toBeGreaterThan(0);
   });
 
-  it("uses the verified viralzoom.tech origin for canonical URLs", () => {
+  it("uses the verified viralzoom.agency origin for canonical URLs", () => {
     expect(canonicalUrl("/services/website-design")).toBe(
-      "https://viralzoom.tech/services/website-design",
+      "https://viralzoom.agency/services/website-design",
     );
   });
 

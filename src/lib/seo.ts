@@ -1,4 +1,4 @@
-export const PUBLIC_SITE_ORIGIN = "https://viralzoom.tech";
+export const PUBLIC_SITE_ORIGIN = "https://viralzoom.agency";
 
 export function canonicalUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;

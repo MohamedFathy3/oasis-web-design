@@ -1,6 +1,6 @@
 # خطة SEO العربية — Viral Zoom
 
-**النطاق المعتمد:** `https://viralzoom.tech` (أكده مالك الموقع).  
+**النطاق المعتمد:** `https://viralzoom.agency` (أكده مالك الموقع).  
 **الأسواق:** مصر، السعودية، ودول الخليج.  
 **حالة البيانات:** هذه خريطة أولية مبنية على نية الباحث والمصطلحات التي تستخدمها صفحات المنافسين والمنصات الإقليمية؛ ليست تقرير أحجام بحث أو ترتيب كلمات. قبل شراء إعلانات أو ترتيب الأولويات بالأرقام، يلزم استخراج بيانات Google Keyword Planner وSearch Console لكل بلد.
 
@@ -60,4 +60,4 @@
 - Google Ads: https://business.google.com/en-all/google-ads/
 - صفحات مقارنة وكالات إقليمية استخدمت كمؤشرات لغوية لا كمصدر لحجوم البحث: https://clutch.co/sa/agencies/digital-marketing ، https://www.webegypt.net/ar/ ، https://www.7gmedia.com/
 
-**خطوة Search Console:** يلزم أن يثبت مالك النطاق ملكيته لحساب Google Search Console عبر DNS أو طريقة تحقق مناسبة، ثم يرسل `https://viralzoom.tech/sitemap.xml`. لا يمكن تسجيل الملكية أو الإرسال نيابة عن المالك من دون حسابه وصلاحيته.
+**خطوة Search Console:** يلزم أن يثبت مالك النطاق ملكيته لحساب Google Search Console عبر DNS أو طريقة تحقق مناسبة، ثم يرسل `https://viralzoom.agency/sitemap.xml`. لا يمكن تسجيل الملكية أو الإرسال نيابة عن المالك من دون حسابه وصلاحيته.

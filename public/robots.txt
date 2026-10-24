@@ -15,4 +15,4 @@ Allow: /
 User-agent: *
 Allow: /
 Disallow: /admin
-Sitemap: https://viralzoom.tech/sitemap.xml
+Sitemap: https://viralzoom.agency/sitemap.xml

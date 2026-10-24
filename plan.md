@@ -12,7 +12,7 @@
 
 ## الفهرسة وSEO
 
-تم تثبيت `https://viralzoom.tech` كعنوان إنتاج مؤكد وقابل للاستبدال بمتغير `PUBLIC_SITE_URL`. تولّد عملية البناء Sitemap وتضيف رابطها إلى robots؛ يتضمن sitemap المسارات العامة والصفحات الإضافية للخدمات والمشروعات. `/admin` محجوب عن الفهرسة. أضيفت canonical وOG URL والبيانات المنظمة للصفحات العامة وتفاصيلها.
+تم تثبيت `https://viralzoom.agency` كعنوان إنتاج مؤكد وقابل للاستبدال بمتغير `PUBLIC_SITE_URL`. تولّد عملية البناء Sitemap وتضيف رابطها إلى robots؛ يتضمن sitemap المسارات العامة والصفحات الإضافية للخدمات والمشروعات. `/admin` محجوب عن الفهرسة. أضيفت canonical وOG URL والبيانات المنظمة للصفحات العامة وتفاصيلها.
 
 أزيل انتظار تفضيلات المتصفح من مسار الصفحة الرئيسية كي يصل H1 والمحتوى في HTML المقدم للخادم للزاحف. صفحات الخدمات موجودة بمسارات منفصلة مثل `/services/website-design` و`/services/ecommerce-development` و`/services/digital-marketing` و`/services/software-development`.
 
@@ -24,7 +24,7 @@
 
 فحص CMS الإنتاجي كشف أن `sections.services` ما زال `true` وأن الخدمات الـ14 مفعّلة وقت الفحص؛ إذا أراد المالك إخفاء قسم «الخدمات»، يدخل `/admin` ويعطّل القسم ويحفظه. اختبار الـAPI اختبر تخزينًا مؤقتًا منفصلًا وليس قاعدة الإنتاج.
 
-لا يمكن إكمال إثبات النطاق أو تقديم sitemap في Search Console من دون صلاحية حساب Google للمالك. بعد النشر: أثبت `viralzoom.tech` في Search Console ثم أرسل `https://viralzoom.tech/sitemap.xml` وتابع تقارير الفهرسة والأداء.
+لا يمكن إكمال إثبات النطاق أو تقديم sitemap في Search Console من دون صلاحية حساب Google للمالك. بعد النشر: أثبت `viralzoom.agency` في Search Console ثم أرسل `https://viralzoom.agency/sitemap.xml` وتابع تقارير الفهرسة والأداء.
 
 ## التحقق المطلوب قبل النشر
 

@@ -1,9 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { handleApiRequest } from "@/lib/server-api";
 
-const contactUrl = "https://viralzoom.tech/api/contact";
+const { sendMailMock } = vi.hoisted(() => ({ sendMailMock: vi.fn() }));
 
-function contactRequest(payload: unknown, origin = "https://viralzoom.tech") {
+vi.mock("nodemailer", () => ({
+  createTransport: vi.fn(() => ({ sendMail: sendMailMock })),
+}));
+
+const contactUrl = "https://viralzoom.agency/api/contact";
+
+function contactRequest(payload: unknown, origin = "https://viralzoom.agency") {
   return new Request(contactUrl, {
     method: "POST",
     headers: { origin, "content-type": "application/json" },
@@ -41,7 +47,7 @@ describe("Contact API", () => {
   });
 
   it("reports missing SMTP credentials instead of claiming delivery", async () => {
-    vi.stubEnv("SMTP_USER", "");
+    vi.stubEnv("SMTP_USER", "info@viralzoom.agency");
     vi.stubEnv("SMTP_PASSWORD", "");
     try {
       const response = await handleApiRequest(
@@ -56,6 +62,62 @@ describe("Contact API", () => {
       expect(response?.status).toBe(503);
       await expect(response?.json()).resolves.toEqual({
         error: "Contact email is not configured on the server.",
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("reports success only when SMTP accepts the configured recipient", async () => {
+    vi.stubEnv("SMTP_USER", "info@viralzoom.agency");
+    vi.stubEnv("SMTP_PASSWORD", "test-password");
+    sendMailMock.mockResolvedValueOnce({
+      accepted: ["info@viralzoom.agency"],
+      rejected: [],
+      messageId: "test-message",
+      response: "250 Message accepted",
+    });
+
+    try {
+      const response = await handleApiRequest(
+        contactRequest({
+          name: "Visitor",
+          email: "visitor@example.com",
+          subject: "Project",
+          message: "Hello",
+        }),
+      );
+
+      expect(response?.status).toBe(200);
+      await expect(response?.json()).resolves.toEqual({ sent: true });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it("reports an SMTP rejection as a delivery error", async () => {
+    vi.stubEnv("SMTP_USER", "info@viralzoom.agency");
+    vi.stubEnv("SMTP_PASSWORD", "test-password");
+    sendMailMock.mockResolvedValueOnce({
+      accepted: [],
+      rejected: ["info@viralzoom.agency"],
+      messageId: "test-message",
+      response: "550 Recipient rejected",
+    });
+
+    try {
+      const response = await handleApiRequest(
+        contactRequest({
+          name: "Visitor",
+          email: "visitor@example.com",
+          subject: "Project",
+          message: "Hello",
+        }),
+      );
+
+      expect(response?.status).toBe(502);
+      await expect(response?.json()).resolves.toEqual({
+        error: "Your message could not be delivered. Please try again later.",
       });
     } finally {
       vi.unstubAllEnvs();

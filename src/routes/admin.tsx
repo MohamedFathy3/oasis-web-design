@@ -1754,7 +1754,7 @@ function AdminPage() {
                 t.whatsapp,
                 draft.contact.whatsapp,
                 (v) => update("contact", { ...draft.contact, whatsapp: v }),
-                "https://wa.me/…",
+                "+20 1… or https://wa.me/…",
               )}
               {bilingualFields(t.address, draft.contact.address, (v) =>
                 update("contact", { ...draft.contact, address: v }),

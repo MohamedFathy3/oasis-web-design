@@ -15,6 +15,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CMSProvider } from "../lib/cms";
 import { loadSiteConfig } from "../lib/cms-loader";
+import { WhatsAppFloatingButton } from "../components/whatsapp-floating-button";
 
 function NotFoundComponent() {
   return (
@@ -150,6 +151,7 @@ function RootComponent() {
       <CMSProvider serverConfig={siteConfig}>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
         <Outlet />
+        <WhatsAppFloatingButton />
       </CMSProvider>
     </QueryClientProvider>
   );

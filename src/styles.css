@@ -56,6 +56,78 @@
   }
 }
 
+.whatsapp-floating-button {
+  position: fixed;
+  z-index: 1000;
+  right: max(24px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border: 2px solid rgb(255 255 255 / 90%);
+  border-radius: 50%;
+  color: #fff;
+  background: #25d366;
+  box-shadow: 0 5px 20px rgb(37 211 102 / 35%);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+  animation: whatsapp-pulse 2s ease-out infinite;
+}
+
+.whatsapp-floating-button:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 8px 26px rgb(37 211 102 / 48%);
+}
+
+.whatsapp-floating-bubble {
+  width: 29px;
+  height: 29px;
+  stroke-width: 2.4;
+}
+
+.whatsapp-floating-phone {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.8;
+}
+
+@keyframes whatsapp-pulse {
+  0% {
+    box-shadow:
+      0 0 0 0 rgb(37 211 102 / 45%),
+      0 5px 20px rgb(37 211 102 / 35%);
+  }
+  70% {
+    box-shadow:
+      0 0 0 13px rgb(37 211 102 / 0%),
+      0 5px 20px rgb(37 211 102 / 35%);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgb(37 211 102 / 0%),
+      0 5px 20px rgb(37 211 102 / 35%);
+  }
+}
+
+@media (max-width: 560px) {
+  .whatsapp-floating-button {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    width: 54px;
+    height: 54px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-floating-button {
+    animation: none;
+    transition: none;
+  }
+}
+
 /*
  * Design system definition.
  *
