@@ -24,6 +24,7 @@ import {
   ImagePlus,
   LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   Monitor,
   Palette,
@@ -59,7 +60,17 @@ export const Route = createFileRoute("/admin")({
 });
 const ADMIN_EMAIL = "admin@admin.com";
 type Lang = "en" | "ar";
-type Section = "overview" | "home" | "pages" | "services" | "portfolio" | "clients" | "settings";
+type Section =
+  "overview" | "home" | "pages" | "services" | "portfolio" | "clients" | "messages" | "settings";
+type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+};
 const labels: Record<
   Lang,
   Record<
@@ -150,6 +161,7 @@ const labels: Record<
     services: "Services",
     portfolio: "Portfolio",
     clients: "Clients",
+    messages: "Messages",
     settings: "Settings",
     signIn: "Sign in",
     dashboard: "Control room",
@@ -234,6 +246,7 @@ const labels: Record<
     services: "الخدمات",
     portfolio: "الأعمال",
     clients: "العملاء",
+    messages: "الرسائل",
     settings: "الإعدادات",
     signIn: "تسجيل الدخول",
     dashboard: "لوحة التحكم",
@@ -319,6 +332,7 @@ const menuItems: { id: Section; icon: typeof LayoutDashboard }[] = [
   { id: "services", icon: Sparkles },
   { id: "portfolio", icon: ImagePlus },
   { id: "clients", icon: Users },
+  { id: "messages", icon: Mail },
   { id: "settings", icon: Settings2 },
 ];
 const pageContentGroups = [
@@ -354,6 +368,10 @@ function AdminPage() {
   const [videoEditorType, setVideoEditorType] = useState<VideoProjectType>("reels");
   const [saved, setSaved] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messagesError, setMessagesError] = useState("");
+  const [messagesRefresh, setMessagesRefresh] = useState(0);
   useEffect(() => setDraft(cms.config), [cms.config]);
   useEffect(() => {
     let mounted = true;
@@ -369,6 +387,45 @@ function AdminPage() {
       mounted = false;
     };
   }, []);
+  useEffect(() => {
+    if (!authed) return;
+    let active = true;
+    let initialLoad = true;
+    const loadMessages = () => {
+      if (initialLoad) {
+        setMessagesLoading(true);
+        initialLoad = false;
+      }
+      fetch("/api/contact", { credentials: "same-origin" })
+        .then(async (response) => {
+          const result = (await response.json()) as {
+            messages?: ContactMessage[];
+            error?: string;
+          };
+          if (!response.ok || !Array.isArray(result.messages))
+            throw new Error(result.error || "Could not load contact messages.");
+          if (active) {
+            setContactMessages(result.messages);
+            setMessagesError("");
+          }
+        })
+        .catch((error: unknown) => {
+          if (active)
+            setMessagesError(
+              error instanceof Error ? error.message : "Could not load contact messages.",
+            );
+        })
+        .finally(() => {
+          if (active) setMessagesLoading(false);
+        });
+    };
+    loadMessages();
+    const refreshInterval = window.setInterval(loadMessages, 30_000);
+    return () => {
+      active = false;
+      window.clearInterval(refreshInterval);
+    };
+  }, [authed, messagesRefresh]);
   const sectionTitle = t[section];
   const count = useMemo(
     () => ({
@@ -380,6 +437,50 @@ function AdminPage() {
   );
   const update = <K extends keyof SiteConfig>(key: K, value: SiteConfig[K]) =>
     setDraft((old) => ({ ...old, [key]: value }));
+  const toggleContactMessageRead = async (message: ContactMessage) => {
+    const isRead = !message.isRead;
+    try {
+      const response = await fetch(`/api/contact/${encodeURIComponent(message.id)}`, {
+        method: "PATCH",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ isRead }),
+      });
+      if (!response.ok)
+        throw new Error(lang === "ar" ? "تعذر تحديث الرسالة." : "Could not update the message.");
+      setContactMessages((current) =>
+        current.map((item) => (item.id === message.id ? { ...item, isRead } : item)),
+      );
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : lang === "ar"
+            ? "تعذر تحديث الرسالة."
+            : "Could not update the message.",
+      );
+    }
+  };
+  const deleteContactMessage = async (messageId: string) => {
+    if (!window.confirm(lang === "ar" ? "حذف هذه الرسالة؟" : "Delete this message?")) return;
+    try {
+      const response = await fetch(`/api/contact/${encodeURIComponent(messageId)}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (!response.ok)
+        throw new Error(lang === "ar" ? "تعذر حذف الرسالة." : "Could not delete the message.");
+      setContactMessages((current) => current.filter((item) => item.id !== messageId));
+    } catch (error) {
+      window.alert(
+        error instanceof Error
+          ? error.message
+          : lang === "ar"
+            ? "تعذر حذف الرسالة."
+            : "Could not delete the message.",
+      );
+    }
+  };
   const doLogin = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
@@ -626,6 +727,9 @@ function AdminPage() {
             <Icon size={17} />
             <span>{t[id]}</span>
             {id === "services" && <em>{count.services}</em>}
+            {id === "messages" && (
+              <em>{contactMessages.filter((message) => !message.isRead).length}</em>
+            )}
           </button>
         ))}
       </nav>
@@ -716,7 +820,21 @@ function AdminPage() {
       </div>
       {value && (
         <div className="vz-image-preview">
-          {accept.startsWith("video") ? <video src={value} controls /> : <img src={value} alt="" />}
+          {accept.startsWith("video") ? (
+            resolveVideoEmbed(value) ? (
+              <iframe
+                src={resolveVideoEmbed(value) ?? undefined}
+                title={label}
+                loading="lazy"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            ) : (
+              <video src={value} controls playsInline />
+            )
+          ) : (
+            <img src={value} alt="" />
+          )}
           <button onClick={() => onChange("")}>
             <X size={14} />
           </button>
@@ -1026,8 +1144,8 @@ function AdminPage() {
                   </b>
                   <small>
                     {lang === "ar"
-                      ? "أضف رابطًا مباشرًا لملف فيديو MP4 أو WebM."
-                      : "Add a direct link to an MP4 or WebM video file."}
+                      ? "أضف رابط YouTube أو Vimeo أو رابط ملف MP4/WebM مباشر."
+                      : "Add a YouTube or Vimeo link, or a direct MP4/WebM video URL."}
                   </small>
                   {selectedVideoLinks.map((video, index) => (
                     <div className="vz-panel" key={`${video}-${index}`}>
@@ -1544,6 +1662,94 @@ function AdminPage() {
         </div>
       </>
     );
+  else if (section === "messages")
+    body = (
+      <>
+        <PageIntro
+          eyebrow="06 / INBOX"
+          title={t.messages}
+          desc={
+            lang === "ar"
+              ? "رسائل نموذج تواصل معنا محفوظة هنا حتى لو تعذر إرسال إشعار البريد."
+              : "Contact form messages are saved here, even if an email notification fails."
+          }
+        />
+        <div className="vz-inbox-toolbar">
+          <span>
+            {contactMessages.filter((message) => !message.isRead).length}{" "}
+            {lang === "ar" ? "رسالة غير مقروءة" : "unread messages"}
+          </span>
+          <button
+            className="vz-outline-button"
+            type="button"
+            onClick={() => setMessagesRefresh((value) => value + 1)}
+          >
+            {lang === "ar" ? "تحديث" : "Refresh"}
+          </button>
+        </div>
+        {messagesError && <div className="vz-error">{messagesError}</div>}
+        {messagesLoading ? (
+          <div className="vz-panel vz-empty">
+            {lang === "ar" ? "جارٍ تحميل الرسائل…" : "Loading messages…"}
+          </div>
+        ) : contactMessages.length === 0 ? (
+          <div className="vz-panel vz-empty">
+            {lang === "ar" ? "لا توجد رسائل حتى الآن." : "No contact messages yet."}
+          </div>
+        ) : (
+          <div className="vz-inbox-list">
+            {contactMessages.map((message) => (
+              <article
+                className={`vz-panel vz-inbox-message${message.isRead ? "" : " is-unread"}`}
+                key={message.id}
+              >
+                <div className="vz-inbox-message-head">
+                  <div>
+                    <strong>{message.name}</strong>
+                    {!message.isRead && (
+                      <span className="vz-inbox-unread">{lang === "ar" ? "جديدة" : "New"}</span>
+                    )}
+                    <a href={`mailto:${message.email}`}>{message.email}</a>
+                  </div>
+                  <time dateTime={message.createdAt}>
+                    {new Intl.DateTimeFormat(lang === "ar" ? "ar-EG" : "en", {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    }).format(new Date(message.createdAt))}
+                  </time>
+                </div>
+                <h3>{message.subject || (lang === "ar" ? "بدون عنوان" : "No subject")}</h3>
+                <p>{message.message}</p>
+                <div className="vz-inbox-actions">
+                  <button
+                    className="vz-small-add"
+                    type="button"
+                    onClick={() => void toggleContactMessageRead(message)}
+                  >
+                    <Check size={14} />
+                    {message.isRead
+                      ? lang === "ar"
+                        ? "تحديد كغير مقروءة"
+                        : "Mark unread"
+                      : lang === "ar"
+                        ? "تحديد كمقروءة"
+                        : "Mark read"}
+                  </button>
+                  <button
+                    className="vz-small-add vz-danger-action"
+                    type="button"
+                    onClick={() => void deleteContactMessage(message.id)}
+                  >
+                    <Trash2 size={14} />
+                    {t.delete}
+                  </button>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </>
+    );
   else if (section === "home")
     body = (
       <>
@@ -1687,7 +1893,7 @@ function AdminPage() {
     body = (
       <>
         <PageIntro
-          eyebrow="06 / SETTINGS"
+          eyebrow="07 / SETTINGS"
           title={t.settings}
           desc={
             lang === "ar"

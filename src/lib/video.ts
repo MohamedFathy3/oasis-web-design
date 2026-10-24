@@ -3,12 +3,13 @@ export function resolveVideoEmbed(rawUrl: string): string | null {
     const url = new URL(rawUrl);
     if (url.protocol !== "https:") return null;
 
-    const hostname = url.hostname.replace(/^www\./, "");
+    const hostname = url.hostname.toLowerCase().replace(/^www\./, "");
     if (
       hostname === "youtu.be" ||
       hostname === "youtube.com" ||
       hostname === "m.youtube.com" ||
-      hostname === "youtube-nocookie.com"
+      hostname === "youtube-nocookie.com" ||
+      hostname === "music.youtube.com"
     ) {
       const pathParts = url.pathname.split("/").filter(Boolean);
       const id =

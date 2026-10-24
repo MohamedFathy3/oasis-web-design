@@ -27,3 +27,16 @@ model ContentItem {
   @@index([collection, position], map: "content_items_order")
   @@map("content_items")
 }
+
+model ContactMessage {
+  id        String   @id @db.VarChar(36)
+  name      String   @db.VarChar(120)
+  email     String   @db.VarChar(254)
+  subject   String   @db.VarChar(160)
+  message   String   @db.LongText
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(3)
+
+  @@index([isRead, createdAt], map: "contact_messages_inbox")
+  @@map("contact_messages")
+}

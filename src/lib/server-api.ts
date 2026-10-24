@@ -501,8 +501,57 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
 
   if (!url.pathname.startsWith("/api/")) return null;
 
+  if (url.pathname === "/api/contact" && method === "GET") {
+    if (!requireAdmin(request)) return json({ error: "Unauthorized" }, 401);
+    const db = await getDatabase();
+    const messages = await db.contactMessage.findMany({
+      orderBy: { createdAt: "desc" },
+    });
+    return json({
+      messages,
+      unreadCount: messages.filter((message) => !message.isRead).length,
+    });
+  }
+
+  const contactMessageResource = url.pathname.match(/^\/api\/contact\/([^/]+)$/);
+  if (contactMessageResource) {
+    if (!requireAdmin(request)) return json({ error: "Unauthorized" }, 401);
+    const id = contactMessageResource[1]!;
+    if (!/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(id))
+      return json({ error: "Not found" }, 404);
+    const db = await getDatabase();
+
+    if (method === "PATCH") {
+      let body: unknown;
+      try {
+        body = await readJson(request, 1024);
+      } catch {
+        return json({ error: "Invalid request" }, 400);
+      }
+      if (
+        !body ||
+        typeof body !== "object" ||
+        typeof (body as { isRead?: unknown }).isRead !== "boolean"
+      )
+        return json({ error: "Invalid request" }, 400);
+      const result = await db.contactMessage.updateMany({
+        where: { id },
+        data: { isRead: (body as { isRead: boolean }).isRead },
+      });
+      return result.count ? json({ updated: true }) : json({ error: "Not found" }, 404);
+    }
+
+    if (method === "DELETE") {
+      const result = await db.contactMessage.deleteMany({ where: { id } });
+      return result.count ? json({ deleted: true }) : json({ error: "Not found" }, 404);
+    }
+
+    return json({ error: "Method not allowed" }, 405, { Allow: "PATCH, DELETE" });
+  }
+
   if (url.pathname === "/api/contact") {
-    if (method !== "POST") return json({ error: "Method not allowed" }, 405, { Allow: "POST" });
+    if (method !== "POST")
+      return json({ error: "Method not allowed" }, 405, { Allow: "GET, POST" });
     if (!request.headers.has("origin") || !sameOrigin(request))
       return json({ error: "Invalid origin" }, 403);
 
@@ -540,24 +589,6 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
       return json({ error: "Please check the contact form fields." }, 422);
     }
 
-    const smtpUser = env["SMTP_USER"]?.trim();
-    const smtpPassword = env["SMTP_PASSWORD"];
-    const host = env["SMTP_HOST"]?.trim() || "smtp.hostinger.com";
-    const port = Number(env["SMTP_PORT"] || 465);
-    const recipient = env["CONTACT_EMAIL"]?.trim() || "info@viralzoom.agency";
-    if (
-      !smtpUser ||
-      !smtpPassword ||
-      !smtpPassword.trim() ||
-      !host ||
-      !Number.isInteger(port) ||
-      port < 1 ||
-      port > 65535 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)
-    ) {
-      return json({ error: "Contact email is not configured on the server." }, 503);
-    }
-
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
     const now = Date.now();
     const recent = contactAttempts.get(ip);
@@ -574,6 +605,37 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
         ? { count: recent.count + 1, expires: recent.expires }
         : { count: 1, expires: now + 10 * 60 * 1000 },
     );
+
+    const db = await getDatabase();
+    await db.contactMessage.create({
+      data: {
+        id: randomUUID(),
+        name: name.trim(),
+        email: email.trim(),
+        subject: subject.trim(),
+        message: message.trim(),
+      },
+    });
+
+    const smtpUser = env["SMTP_USER"]?.trim();
+    const smtpPassword = env["SMTP_PASSWORD"];
+    const host = env["SMTP_HOST"]?.trim() || "smtp.hostinger.com";
+    const port = Number(env["SMTP_PORT"] || 465);
+    const recipient = env["CONTACT_EMAIL"]?.trim() || "info@viralzoom.agency";
+    const smtpConfigured =
+      !!smtpUser &&
+      !!smtpPassword?.trim() &&
+      !!host &&
+      Number.isInteger(port) &&
+      port >= 1 &&
+      port <= 65535 &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient);
+    if (!smtpConfigured) {
+      console.warn(
+        "Contact message saved to the dashboard; SMTP email notification is not configured.",
+      );
+      return json({ sent: true, emailSent: false }, 201);
+    }
 
     try {
       const transport = createTransport({
@@ -602,12 +664,12 @@ export async function handleApiRequest(request: Request): Promise<Response | nul
           rejected: info.rejected,
           response: info.response,
         });
-        return json({ error: "Your message could not be delivered. Please try again later." }, 502);
+        return json({ sent: true, emailSent: false }, 201);
       }
-      return json({ sent: true });
+      return json({ sent: true, emailSent: true }, 201);
     } catch (error) {
       console.error("Contact email delivery failed:", error);
-      return json({ error: "Your message could not be delivered. Please try again later." }, 502);
+      return json({ sent: true, emailSent: false }, 201);
     }
   }
 

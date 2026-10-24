@@ -24,6 +24,12 @@ describe("App routing", () => {
     expect(resolveVideoEmbed("https://youtu.be/3UlrYeR3WJo")).toBe(
       "https://www.youtube-nocookie.com/embed/3UlrYeR3WJo",
     );
+    expect(resolveVideoEmbed("https://youtu.be/3UlrYeR3WJo?si=campaign-share")).toBe(
+      "https://www.youtube-nocookie.com/embed/3UlrYeR3WJo",
+    );
+    expect(resolveVideoEmbed("https://music.youtube.com/watch?v=3UlrYeR3WJo")).toBe(
+      "https://www.youtube-nocookie.com/embed/3UlrYeR3WJo",
+    );
     expect(resolveVideoEmbed("https://evil.example/embed/3UlrYeR3WJo")).toBeNull();
     expect(resolveVideoEmbed("javascript:alert(1)")).toBeNull();
   });
@@ -97,7 +103,9 @@ describe("App routing", () => {
 
     expect(allCategoryProjects.some((project) => projectHasCategory(project, "video"))).toBe(false);
     expect(videoCategoryProjects.length).toBeGreaterThan(0);
-    expect(videoCategoryProjects.every((project) => projectHasCategory(project, "video"))).toBe(true);
+    expect(videoCategoryProjects.every((project) => projectHasCategory(project, "video"))).toBe(
+      true,
+    );
     expect(allCategoryProjects.length + videoCategoryProjects.length).toBe(allProjects.length);
   });
 
