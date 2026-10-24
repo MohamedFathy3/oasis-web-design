@@ -29,7 +29,6 @@ export function ShowcaseContact({ language }: { language: Language }) {
           email: data.get("email"),
           subject: data.get("subject"),
           message: data.get("message"),
-          website: data.get("website"),
         }),
       });
       const contentType = response.headers.get("content-type") ?? "";
@@ -98,13 +97,6 @@ export function ShowcaseContact({ language }: { language: Language }) {
           <div className="contact-eyebrow">{copy("contactEyebrow")}</div>
           <h2 id="contact-title">{copy("contactHeading")}</h2>
           <form className="contact-form" onSubmit={handleSubmit}>
-            <input
-              className="contact-field-honeypot"
-              name="website"
-              tabIndex={-1}
-              autoComplete="off"
-              aria-hidden="true"
-            />
             <label className="sr-only" htmlFor="contact-name">
               {copy("contactName")}
             </label>
