@@ -295,14 +295,14 @@ export const initialConfig: SiteConfig = {
       ],
     },
     seo: {
-      siteTitle: { en: "ViralZoom", ar: "ViralZoom" },
+      siteTitle: { en: "ViralZoom Agency", ar: "ViralZoom Agency" },
       siteDescription: {
         en: "Creative and digital marketing agency.",
         ar: "وكالة إبداعية ورقمية للتسويق والتصميم.",
       },
       homeTitle: {
-        en: "ViralZoom",
-        ar: "ViralZoom",
+        en: "ViralZoom Agency",
+        ar: "ViralZoom Agency",
       },
       homeDescription: {
         en: "Ideas that make your brand impossible to ignore.",
@@ -350,8 +350,8 @@ export const initialConfig: SiteConfig = {
       },
       home: {
         seoTitle: {
-          en: "ViralZoom",
-          ar: "ViralZoom",
+          en: "ViralZoom Agency",
+          ar: "ViralZoom Agency",
         },
         seoDescription: {
           en: "Ideas that make your brand impossible to ignore.",

@@ -22,6 +22,19 @@ export type ProjectCategoryId =
 
 export type VideoProjectType = "reels" | "promo-video";
 
+export function shuffleVideoFeed<T>(items: readonly T[], seed: number): T[] {
+  const shuffled = [...items];
+  let state = (Math.floor(seed * 0x1_0000_0000) >>> 0) || 1;
+
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+    const swapIndex = state % (index + 1);
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex]!, shuffled[index]!];
+  }
+
+  return shuffled;
+}
+
 type ProjectContent = {
   slug: string;
   name: string;

@@ -16,7 +16,7 @@ import { useCMS } from "@/lib/cms";
 import { absoluteSiteAsset, canonicalUrl } from "@/lib/seo";
 import { loadSiteConfig } from "@/lib/cms-loader";
 
-const HOME_PAGE_TITLE = "ViralZoom";
+const HOME_PAGE_TITLE = "ViralZoom Agency";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -54,6 +54,7 @@ export const Route = createFileRoute("/")({
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: HOME_PAGE_TITLE,
+          alternateName: "ViralZoom",
           url: canonicalUrl("/"),
         }),
       },
@@ -63,6 +64,7 @@ export const Route = createFileRoute("/")({
           "@context": "https://schema.org",
           "@type": "Organization",
           name: HOME_PAGE_TITLE,
+          alternateName: "ViralZoom",
           url: canonicalUrl("/"),
           email: loaderData?.siteConfig.contact.email,
           logo: loaderData?.siteConfig.brand.logo,

@@ -9,9 +9,10 @@ import {
   projectCategories,
   projectHasCategory,
   projects,
+  shuffleVideoFeed,
 } from "@/lib/projects";
 import { getPageCopy, initialConfig, mergeSiteConfig, projectItemsFromConfig } from "@/lib/cms";
-import { canonicalUrl } from "@/lib/seo";
+import { canonicalUrl, redirectToCanonicalHost } from "@/lib/seo";
 import { resolveVideoEmbed } from "@/lib/video";
 
 // Match routes without running loaders or rendering: loaders may need a server or
@@ -37,7 +38,10 @@ describe("App routing", () => {
   it("provides bilingual CMS copy for each public page", () => {
     const config = mergeSiteConfig(initialConfig);
 
-    expect(config.content.pages.home.seoTitle).toEqual({ en: "ViralZoom", ar: "ViralZoom" });
+    expect(config.content.pages.home.seoTitle).toEqual({
+      en: "ViralZoom Agency",
+      ar: "ViralZoom Agency",
+    });
     expect(config.contact.email).toBe("info@viralzoom.agency");
     expect(config.contact.phone).toBe("01222291024");
     expect(getPageCopy(config, "about", "heroTitle", "en")).toBe("We turn bold ideas");
@@ -136,6 +140,17 @@ describe("App routing", () => {
     expect(project?.promoVideos).toHaveLength(1);
   });
 
+  it("shuffles Reels consistently per entry seed without changing the saved list", () => {
+    const videos = ["reel-1", "reel-2", "reel-3", "reel-4", "reel-5"];
+    const firstVisitOrder = shuffleVideoFeed(videos, 0.25);
+    const nextVisitOrder = shuffleVideoFeed(videos, 0.75);
+
+    expect(firstVisitOrder).toEqual(shuffleVideoFeed(videos, 0.25));
+    expect(nextVisitOrder).not.toEqual(firstVisitOrder);
+    expect([...firstVisitOrder].sort()).toEqual([...videos].sort());
+    expect(videos).toEqual(["reel-1", "reel-2", "reel-3", "reel-4", "reel-5"]);
+  });
+
   it("provides a second social project with exactly eight gallery images", () => {
     const project = projects.find((item) => item.slug === "social-media-eight-posts");
 
@@ -164,6 +179,18 @@ describe("App routing", () => {
     expect(canonicalUrl("/services/website-design")).toBe(
       "https://viralzoom.agency/services/website-design",
     );
+  });
+
+  it("permanently redirects .tech traffic to the .agency domain", () => {
+    const response = redirectToCanonicalHost(
+      new Request("https://www.viralzoom.tech/projects/example?ref=google"),
+    );
+
+    expect(response?.status).toBe(308);
+    expect(response?.headers.get("location")).toBe(
+      "https://viralzoom.agency/projects/example?ref=google",
+    );
+    expect(redirectToCanonicalHost(new Request("https://viralzoom.agency/"))).toBeNull();
   });
 
   it("does not publish dashboard duplicate-copy records in the public project list", () => {

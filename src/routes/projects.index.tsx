@@ -12,6 +12,7 @@ import {
   projectCategories,
   projectHasCategory,
   projects,
+  shuffleVideoFeed,
   type ProjectCategoryId,
   type VideoProjectType,
 } from "@/lib/projects";
@@ -64,6 +65,7 @@ function ProjectsPage() {
   const [darkMode, setDarkMode] = useState(true);
   const [activeCategory, setActiveCategory] = useState<ProjectCategoryId | "all">("all");
   const [activeVideoType, setActiveVideoType] = useState<VideoProjectType>("reels");
+  const [reelsShuffleSeed, setReelsShuffleSeed] = useState(() => Math.random());
   const navigate = useNavigate();
   const ar = language === "ar";
   const copy = (key: string) => getPageCopy(config, "projects", key, language);
@@ -86,11 +88,19 @@ function ProjectsPage() {
     () => filterProjectsByCategory(allProjects, activeCategory),
     [activeCategory, allProjects],
   );
-  const videoFeed = visibleProjects.flatMap(
-    (project) =>
-      (activeVideoType === "reels" ? project.reelsVideos : project.promoVideos)
-        ?.filter(Boolean)
-        .map((src, index) => ({ project, src, index })) ?? [],
+  const videoFeed = useMemo(
+    () =>
+      visibleProjects.flatMap(
+        (project) =>
+          (activeVideoType === "reels" ? project.reelsVideos : project.promoVideos)
+            ?.filter(Boolean)
+            .map((src, index) => ({ project, src, index })) ?? [],
+      ),
+    [activeVideoType, visibleProjects],
+  );
+  const orderedVideoFeed = useMemo(
+    () => (activeVideoType === "reels" ? shuffleVideoFeed(videoFeed, reelsShuffleSeed) : videoFeed),
+    [activeVideoType, reelsShuffleSeed, videoFeed],
   );
   const showVideoFeed = activeCategory === "video" && activeVideoType === "reels";
   const showVideoGrid = activeCategory === "video" && activeVideoType === "promo-video";
@@ -218,7 +228,10 @@ function ProjectsPage() {
                     aria-pressed={selected}
                     onClick={() => {
                       setActiveCategory(category.id);
-                      if (category.id === "video") setActiveVideoType("reels");
+                      if (category.id === "video") {
+                        setActiveVideoType("reels");
+                        setReelsShuffleSeed(Math.random());
+                      }
                     }}
                   >
                     {categoryLabels[category.id] ?? category.id}
@@ -245,7 +258,10 @@ function ProjectsPage() {
                     className={`projects-filter${activeVideoType === type ? " active" : ""}`}
                     type="button"
                     aria-pressed={activeVideoType === type}
-                    onClick={() => setActiveVideoType(type)}
+                    onClick={() => {
+                      setActiveVideoType(type);
+                      if (type === "reels") setReelsShuffleSeed(Math.random());
+                    }}
                   >
                     {label}
                   </button>
@@ -256,7 +272,7 @@ function ProjectsPage() {
             {showVideoFeed ? (
               videoFeed.length ? (
                 <div className="projects-reels-feed" aria-label={ar ? "ريلز" : "Reels"}>
-                  {videoFeed.map(({ project, src, index }) => (
+                  {orderedVideoFeed.map(({ project, src, index }) => (
                     <article
                       className="projects-reel"
                       key={`${project.slug}-${index}`}

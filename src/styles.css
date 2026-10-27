@@ -299,7 +299,6 @@ html { scroll-behavior: auto; }
 .video-wave-soft { fill: var(--background); opacity: .35; }
 .video-wave-brand { fill: var(--primary); opacity: .5; }
 .video-wave-base { fill: var(--background); }
-.video-brand { position: absolute; z-index: 2; inset-inline-start: 5%; bottom: 150px; width: 143px; opacity: .95; }
 .video-controls { position: absolute; z-index: 2; bottom: 148px; inset-inline-end: 5%; display: flex; gap: 10px; }
 .hero-copy-overlay { position: absolute; z-index: 2; inset-inline-start: 50%; top: 42%; width: min(75%, 900px); color: #fff; text-align: center; transform: translate(-50%, -50%); text-shadow: 0 2px 24px rgb(0 0 0 / 45%); pointer-events: none; }
 .hero-copy-overlay strong { display: block; font-size: clamp(22px, 4vw, 54px); font-weight: 800; letter-spacing: -.04em; line-height: 1.2; }
@@ -447,7 +446,7 @@ html { scroll-behavior: auto; }
 @media(max-width:800px) {
  .site-header { height: 78px; }.header-inner { gap: 14px; grid-template-columns: minmax(0,1fr) auto; }.brand-logo { width: 122px; height: 44px; }.desktop-nav { display: none; }.mobile-menu-toggle { display: inline-flex; }.language-button { padding-inline-start: 12px; }.header-actions { gap: 5px; }
  .mobile-nav { padding: 16px 5%; border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr; position: absolute; top: 78px; inset-inline: 0; background: var(--background); z-index: 20; box-shadow: var(--card-hover-shadow); }.mobile-nav-link { display: flex; min-height: 40px; align-items: center; justify-content: center; border-radius: 6px; color: var(--foreground); font-size: 14px; text-decoration: none; }.mobile-nav-link:hover { color: var(--primary); background: var(--accent); }
- .hero-video { height: 53vw; min-height: 290px; }.video-waves { height: 80px; }.video-brand { width: 100px; bottom: 95px; }.video-controls { bottom: 92px; }.video-control { width: 36px; height: 36px; }
+ .hero-video { height: 53vw; min-height: 290px; }.video-waves { height: 80px; }.video-controls { bottom: 92px; }.video-control { width: 36px; height: 36px; }
  .hero-copy-overlay { top: 38%; width: 84%; }
  .section { padding: 44px 0; }.section-heading { margin-bottom: 28px; padding-top: 20px; }.section-heading h2 { font-size: 28px; }.arrow-control { width: 36px; height: 36px; }.service-card { flex-basis: 300px; padding: 22px; }.service-track { gap: 16px; }.portfolio-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }.portfolio-label { font-size: 12px; padding: 10px; }.client-row { gap: 8px; }.client-logo { flex-basis: 120px; width: 120px; height: 88px; }.client-track { gap: 12px; }.footer-inner { flex-wrap: wrap; }.section-eyebrow { font-size: 10px; }
  .contact-layout { grid-template-columns: 1fr; gap: 38px; }.contact-info-card { min-height: 0; }.contact-info-copy { margin-top: 26px; }.contact-info-note { margin-top: 22px; }.contact-form { margin-top: 28px; gap: 16px; }

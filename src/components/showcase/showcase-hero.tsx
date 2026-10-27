@@ -3,8 +3,6 @@ import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import hero from "@/assets/hero.mp4.asset.json";
 import heroWebm from "@/assets/hero.webm.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
-import poster from "@/assets/poster.jpg.asset.json";
 import type { Language } from "./types";
 import { getPageCopy, useCMS } from "@/lib/cms";
 
@@ -40,10 +38,10 @@ export function ShowcaseHero({ language }: { language: Language }) {
         ref={videoRef}
         className="hero-video"
         autoPlay
+        preload="auto"
         muted={muted}
         loop
         playsInline
-        poster={config.hero.poster || poster.url}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
       >
@@ -74,11 +72,6 @@ export function ShowcaseHero({ language }: { language: Language }) {
         <strong>{config.hero.title[language]}</strong>
         <span>{config.hero.subtitle[language]}</span>
       </div>
-      <img
-        src={config.brand.whiteLogo || whiteLogo.url}
-        className="video-brand"
-        alt={config.brand.name}
-      />
     </section>
   );
 }
