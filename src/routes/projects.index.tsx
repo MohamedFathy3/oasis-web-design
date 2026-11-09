@@ -389,6 +389,8 @@ function ProjectsPage() {
             ) : (
               <div className="projects-grid">
                 {visibleProjects.map((project) => {
+                  const projectLink = project.kind === "external" ? project.url : project.link;
+                  const hasExternalLink = isExternalProjectLink(projectLink);
                   const cardCategoryId =
                     activeCategory !== "all"
                       ? activeCategory
@@ -404,7 +406,7 @@ function ProjectsPage() {
                         <span className="projects-card-category">
                           {categoryLabels[cardCategoryId] ?? cardCategoryId}
                         </span>
-                        {project.kind === "external" && (
+                        {hasExternalLink && (
                           <ArrowUpRight className="projects-card-external" aria-hidden="true" />
                         )}
                       </div>
@@ -412,17 +414,17 @@ function ProjectsPage() {
                         <h2>{project.localizedName?.[language] ?? project.name}</h2>
                         <p>{project.description[language]}</p>
                         <span className="projects-card-action">
-                          {project.kind === "external" ? copy("visitProject") : copy("openProject")}
+                          {hasExternalLink ? copy("visitProject") : copy("openProject")}
                           <ArrowRight aria-hidden="true" />
                         </span>
                       </div>
                     </>
                   );
 
-                  return project.kind === "external" ? (
+                  return hasExternalLink ? (
                     <a
                       className="projects-card"
-                      href={project.url}
+                      href={projectLink}
                       key={project.slug}
                       target="_blank"
                       rel="noreferrer"
