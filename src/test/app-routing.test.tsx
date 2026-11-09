@@ -3,7 +3,7 @@ import { createRouter, rootRouteId } from "@tanstack/react-router";
 import { describe, expect, it } from "vitest";
 
 import { routeTree } from "@/routeTree.gen";
-import { projectHasCategory, projects } from "@/lib/projects";
+import { projectHasCategory, projectHasExternalLink, projects } from "@/lib/projects";
 
 // Match routes without running loaders or rendering: loaders may need a server or
 // network the test run lacks, and jsdom never loads the stylesheets React waits on.
@@ -47,5 +47,15 @@ describe("App routing", () => {
     }
     expect(project.imageGallery).toHaveLength(8);
     expect(projectHasCategory(project, "social-media")).toBe(true);
+  });
+
+  it("uses a project's URL as its external website link", () => {
+    const project = projects.find((item) => item.slug === "bio-derma-group");
+
+    expect(project).toBeDefined();
+    if (!project) throw new Error("Expected the Bio Derma project to exist");
+
+    expect(projectHasExternalLink(project)).toBe(false);
+    expect(projectHasExternalLink({ ...project, url: "https://example.com" })).toBe(true);
   });
 });

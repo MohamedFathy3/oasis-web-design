@@ -25,6 +25,7 @@ type ProjectContent = {
   category: ProjectCategoryId;
   additionalCategories?: ProjectCategoryId[];
   image: string;
+  url?: string;
   description: { en: string; ar: string };
 };
 
@@ -183,6 +184,10 @@ export const projects: Project[] = [
 
 export function projectHasCategory(project: Project, categoryId: ProjectCategoryId | "all") {
   return project.category === categoryId || project.additionalCategories?.includes(categoryId) === true;
+}
+
+export function projectHasExternalLink(project: Project): project is Project & { url: string } {
+  return Boolean(project.url);
 }
 
 export const projectCategories = [

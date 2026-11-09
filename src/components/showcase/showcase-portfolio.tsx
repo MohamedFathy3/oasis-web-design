@@ -1,6 +1,6 @@
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { projects } from "@/lib/projects";
+import { projectHasExternalLink, projects } from "@/lib/projects";
 import type { Language } from "./types";
 import { translate } from "./types";
 
@@ -24,11 +24,13 @@ export function ShowcasePortfolio({ language }: { language: Language }) {
               <>
                 <img src={project.image} alt={project.name} loading="lazy" />
                 <span className="portfolio-label">{project.name}</span>
-                {project.kind === "external" && <ArrowUpRight className="portfolio-external-icon" aria-hidden="true" />}
+                {projectHasExternalLink(project) && (
+                  <ArrowUpRight className="portfolio-external-icon" aria-hidden="true" />
+                )}
               </>
             );
 
-            return project.kind === "external" ? (
+            return projectHasExternalLink(project) ? (
               <a
                 className="portfolio-item"
                 href={project.url}

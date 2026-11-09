@@ -8,7 +8,13 @@ import heroWebm from "@/assets/hero.webm.asset.json";
 import poster from "@/assets/poster.jpg.asset.json";
 import { ShowcaseFooter, ShowcaseHeader } from "@/components/showcase";
 import type { Language, SectionId } from "@/components/showcase/types";
-import { projectCategories, projectHasCategory, projects, type ProjectCategoryId } from "@/lib/projects";
+import {
+  projectCategories,
+  projectHasCategory,
+  projectHasExternalLink,
+  projects,
+  type ProjectCategoryId,
+} from "@/lib/projects";
 import { translate } from "@/components/showcase/types";
 
 export const Route = createFileRoute("/projects/")({
@@ -173,14 +179,16 @@ function ProjectsPage() {
                       <span className="projects-card-category">
                         {projectCategories.find((category) => category.id === cardCategoryId)?.[language]}
                       </span>
-                      {project.kind === "external" && <ArrowUpRight className="projects-card-external" aria-hidden="true" />}
+                      {projectHasExternalLink(project) && (
+                        <ArrowUpRight className="projects-card-external" aria-hidden="true" />
+                      )}
                     </div>
                     <div className="projects-card-copy">
                       <h2>{project.localizedName?.[language] ?? project.name}</h2>
                       <p>{project.description[language]}</p>
                       <span className="projects-card-action">
-                        {project.kind === "external"
-                          ? t("Visit project", "زيارة المشروع")
+                        {projectHasExternalLink(project)
+                          ? t("Visit", "زيارة")
                           : t("View project", "عرض المشروع")}
                         <ArrowRight aria-hidden="true" />
                       </span>
@@ -188,7 +196,7 @@ function ProjectsPage() {
                   </>
                 );
 
-                return project.kind === "external" ? (
+                return projectHasExternalLink(project) ? (
                   <a
                     className="projects-card"
                     href={project.url}
