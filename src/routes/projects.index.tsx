@@ -7,15 +7,6 @@ import poster from "@/assets/poster.jpg.asset.json";
 import { ShowcaseFooter, ShowcaseHeader } from "@/components/showcase";
 import type { Language, SectionId } from "@/components/showcase/types";
 import {
-<<<<<<< HEAD
-  projectCategories,
-  projectHasCategory,
-  projectHasExternalLink,
-  projects,
-  type ProjectCategoryId,
-} from "@/lib/projects";
-import { translate } from "@/components/showcase/types";
-=======
   filterProjectsByCategory,
   isVideoMediaUrl,
   projectCategories,
@@ -39,7 +30,6 @@ function isExternalProjectLink(link: string | undefined): link is string {
     return false;
   }
 }
->>>>>>> 8c13af5d2aadbda5f9ae2dce93c0bafb614d9f73
 
 export const Route = createFileRoute("/projects/")({
   component: ProjectsPage,
@@ -251,57 +241,6 @@ function ProjectsPage() {
               })}
             </div>
 
-<<<<<<< HEAD
-            <div className="projects-grid">
-              {visibleProjects.map((project) => {
-                const cardCategoryId = activeCategory === "all" ? project.category : activeCategory;
-                const cardContent = (
-                  <>
-                    <div className="projects-card-image-wrap">
-                      <img src={project.image} alt={project.name} loading="lazy" />
-                      <span className="projects-card-category">
-                        {projectCategories.find((category) => category.id === cardCategoryId)?.[language]}
-                      </span>
-                      {projectHasExternalLink(project) && (
-                        <ArrowUpRight className="projects-card-external" aria-hidden="true" />
-                      )}
-                    </div>
-                    <div className="projects-card-copy">
-                      <h2>{project.localizedName?.[language] ?? project.name}</h2>
-                      <p>{project.description[language]}</p>
-                      <span className="projects-card-action">
-                        {projectHasExternalLink(project)
-                          ? t("Visit", "زيارة")
-                          : t("View project", "عرض المشروع")}
-                        <ArrowRight aria-hidden="true" />
-                      </span>
-                    </div>
-                  </>
-                );
-
-                return projectHasExternalLink(project) ? (
-                  <a
-                    className="projects-card"
-                    href={project.url}
-                    key={project.slug}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {cardContent}
-                  </a>
-                ) : (
-                  <Link
-                    className="projects-card"
-                    to="/projects/$slug"
-                    params={{ slug: project.slug }}
-                    key={project.slug}
-                  >
-                    {cardContent}
-                  </Link>
-                );
-              })}
-            </div>
-=======
             {activeCategory === "video" && (
               <div
                 className="projects-filters projects-video-filters"
@@ -503,7 +442,6 @@ function ProjectsPage() {
                 })}
               </div>
             )}
->>>>>>> 8c13af5d2aadbda5f9ae2dce93c0bafb614d9f73
           </div>
         </section>
       </main>
