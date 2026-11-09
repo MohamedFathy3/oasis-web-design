@@ -2,10 +2,10 @@
   "version": 1,
   "asset_id": "8bcdc18c-c525-48cc-b750-d7f87d744991",
   "project_id": "0687453c-ae9b-4bd8-ae57-adc33c0944a1",
-  "url": "/__l5e/assets-v1/8bcdc18c-c525-48cc-b750-d7f87d744991/seo.jpg",
+  "url": "/media/campaign/meta-sample-01.webp",
   "r2_key": "a/v1/0687453c-ae9b-4bd8-ae57-adc33c0944a1/8bcdc18c-c525-48cc-b750-d7f87d744991/seo.jpg",
   "original_filename": "seo.jpg",
   "size": 103145,
-  "content_type": "image/jpeg",
+  "content_type": "image/webp",
   "created_at": "2026-10-12T13:30:44Z"
 }

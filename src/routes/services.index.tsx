@@ -1,41 +1,66 @@
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight } from "lucide-react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import logo from "@/assets/logo.png.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
-import website from "@/assets/website.jpg.asset.json";
 import { ShowcaseFooter, ShowcaseHeader } from "@/components/showcase";
 import { services } from "@/lib/showcase-data";
 import type { Language, SectionId } from "@/components/showcase/types";
-import { translate } from "@/components/showcase/types";
+import { canonicalUrl } from "@/lib/seo";
+import { getPageCopy, useCMS } from "@/lib/cms";
+import { loadSiteConfig } from "@/lib/cms-loader";
+import serviceHeroImage from "@/assets/service.png";
 
 export const Route = createFileRoute("/services/")({
   component: ServicesPage,
-  head: () => ({
+  loader: async () => ({ siteConfig: await loadSiteConfig() }),
+  head: ({ loaderData }) => ({
+    links: [{ rel: "canonical", href: canonicalUrl("/services") }],
     meta: [
-      { title: "Our Services — Viral Zoom | خدمات فايرال زوم" },
+      { title: loaderData?.siteConfig.content.pages.services.seoTitle.en },
       {
         name: "description",
-        content:
-          "Explore the creative, digital marketing and production services offered by Viral Zoom. اكتشف خدمات فايرال زوم الإبداعية والتسويقية.",
+        content: loaderData?.siteConfig.content.pages.services.seoDescription.en,
+      },
+      { property: "og:title", content: loaderData?.siteConfig.content.pages.services.seoTitle.ar },
+      {
+        property: "og:description",
+        content: loaderData?.siteConfig.content.pages.services.seoDescription.ar,
+      },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: canonicalUrl("/services") },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: loaderData?.siteConfig.content.pages.services.seoTitle.ar },
+      {
+        name: "twitter:description",
+        content: loaderData?.siteConfig.content.pages.services.seoDescription.ar,
       },
     ],
   }),
 });
 
 function ServicesPage() {
+  const { config, ready } = useCMS();
   const [language, setLanguage] = useState<Language>("en");
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
+  const copy = (key: string) => getPageCopy(config, "services", key, language);
   const navigate = useNavigate();
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const serviceItems = ready
+    ? config.services
+        .filter((item) => item.enabled)
+        .map((item) => ({
+          slug: item.id,
+          title: item.name,
+          description: item.description,
+          image: item.image,
+        }))
+    : services;
 
   useEffect(() => {
     try {
-      setDarkMode(localStorage.getItem("viral-zoom-theme") === "dark");
+      setDarkMode(localStorage.getItem("viral-zoom-theme") !== "light");
       setLanguage(localStorage.getItem("viral-zoom-language") === "ar" ? "ar" : "en");
     } catch {
-      // Keep the default language and light mode when storage is unavailable.
+      // Keep the default language and dark mode when storage is unavailable.
     }
   }, []);
 
@@ -66,7 +91,9 @@ function ServicesPage() {
   const backToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
     });
   };
 
@@ -92,52 +119,46 @@ function ServicesPage() {
         <section className="services-page-hero" aria-labelledby="services-page-title">
           <img
             className="services-page-hero-image"
-            src={website.url}
-            alt={t("A creative digital project by Viral Zoom", "مشروع رقمي إبداعي من فايرال زوم")}
+            src={serviceHeroImage}
+            alt={copy("heroAlt")}
           />
           <div className="services-page-hero-shade" />
           <div className="services-page-hero-content">
-            <p className="services-page-hero-eyebrow">{t("IDEAS INTO IMPACT", "من الفكرة للتأثير")}</p>
+            <p className="services-page-hero-eyebrow">{copy("heroEyebrow")}</p>
             <h1 id="services-page-title">
-              {t("Services that", "خدمات")}
+              {copy("heroTitle")}
               <br />
-              <span>{t("move you forward.", "تحرّكك لقدّام.")}</span>
+              <span>{copy("heroTitleAccent")}</span>
             </h1>
-            <p>
-              {t(
-                "Creative thinking, smart strategy and standout execution — all working together for your brand.",
-                "إبداع واستراتيجية وتنفيذ مميز — كلهم مع بعض عشان علامتك التجارية.",
-              )}
-            </p>
+            <p>{copy("heroDescription")}</p>
             <a className="services-page-hero-cta" href="#services-list">
-              {t("Explore services", "اكتشف خدماتنا")}
+              {copy("heroCta")}
               <ArrowDown aria-hidden="true" />
             </a>
           </div>
           <div className="services-page-hero-index" aria-hidden="true">
-            01 — {String(services.length).padStart(2, "0")}
+            01 — {String(serviceItems.length).padStart(2, "0")}
           </div>
         </section>
 
-        <section className="services-page-list section" id="services-list" aria-labelledby="services-list-title">
+        <section
+          className="services-page-list section"
+          id="services-list"
+          aria-labelledby="services-list-title"
+        >
           <div className="section-inner">
             <div className="section-heading services-page-list-heading">
               <div>
-                <p className="section-eyebrow">{t("HOW WE HELP", "إزاي نساعدك")}</p>
-                <h2 id="services-list-title">{t("What we do best", "خدماتنا")}</h2>
-                <p className="services-page-list-intro">
-                  {t(
-                    "Everything your brand needs to get noticed, connect and grow.",
-                    "كل اللي علامتك محتاجاه عشان تتميز وتتواصل وتكبر.",
-                  )}
-                </p>
+                <p className="section-eyebrow">{copy("listEyebrow")}</p>
+                <h2 id="services-list-title">{copy("listHeading")}</h2>
+                <p className="services-page-list-intro">{copy("listDescription")}</p>
               </div>
               <span className="services-page-total">
-                {String(services.length).padStart(2, "0")} {t("SERVICES", "خدمة")}
+                {String(serviceItems.length).padStart(2, "0")} {copy("listCount")}
               </span>
             </div>
             <div className="services-page-grid">
-              {services.map((service, index) => (
+              {serviceItems.map((service, index) => (
                 <article className="services-page-card" key={service.slug}>
                   <div className="services-page-card-image-wrap">
                     <img
@@ -146,7 +167,9 @@ function ServicesPage() {
                       alt={service.title[language]}
                       loading="lazy"
                     />
-                    <span className="services-page-card-number">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="services-page-card-number">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
                   </div>
                   <div className="services-page-card-copy">
                     <h3>
@@ -158,9 +181,9 @@ function ServicesPage() {
                     <Link
                       to="/services/$slug"
                       params={{ slug: service.slug }}
-                      aria-label={`${t("View details for", "تفاصيل خدمة")} ${service.title[language]}`}
+                      aria-label={`${copy("viewDetails")} ${service.title[language]}`}
                     >
-                      {t("View service", "تفاصيل الخدمة")}
+                      {copy("viewService")}
                       {ar ? <ArrowLeft aria-hidden="true" /> : <ArrowRight aria-hidden="true" />}
                     </Link>
                   </div>
@@ -172,7 +195,7 @@ function ServicesPage() {
       </main>
       <ShowcaseFooter
         language={language}
-        logo={darkMode ? whiteLogo.url : logo.url}
+        logo={darkMode ? config.brand.whiteLogo : config.brand.logo}
         onBackToTop={backToTop}
       />
     </div>

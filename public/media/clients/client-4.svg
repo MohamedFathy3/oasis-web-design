@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="120" viewBox="0 0 300 120" role="img" aria-label="Sample client 5">
+  <rect x="1" y="1" width="298" height="118" rx="18" fill="#fff" stroke="#eeeaf3" stroke-width="2"/>
+  <circle cx="60" cy="60" r="35" fill="#8c6bc0" opacity=".12"/>
+  <path d="M43 69 59 37l17 32H62l-3-7-4 7z" fill="#8c6bc0"/>
+  <text x="112" y="69" font-family="Arial,sans-serif" font-size="22" font-weight="700" fill="#6c6575">Client 05</text>
+</svg>

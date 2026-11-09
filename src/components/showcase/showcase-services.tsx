@@ -1,28 +1,36 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { ArrowDown, ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import homeCardImage from "@/assets/viralzoom-home-.jpg.jpeg";
 import { Button } from "@/components/ui/button";
-import website from "@/assets/website.jpg.asset.json";
-import { services } from "@/lib/showcase-data";
+import { getPageCopy, useCMS } from "@/lib/cms";
 import type { Language } from "./types";
-import { translate } from "./types";
 
 export function ShowcaseServices({ language }: { language: Language }) {
+  const { config } = useCMS();
+  const services = config.services.filter((service) => service.enabled);
   const servicesRef = useRef<HTMLDivElement>(null);
   const autoNextRef = useRef(true);
-  const pointerStartRef = useRef<{ x: number; y: number; scrollLeft: number; pointerId: number } | null>(null);
+  const pointerStartRef = useRef<{
+    x: number;
+    y: number;
+    scrollLeft: number;
+    pointerId: number;
+  } | null>(null);
   const isDraggingRef = useRef(false);
   const suppressClickRef = useRef(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const ar = language === "ar";
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const copy = (key: string) => getPageCopy(config, "home", key, language);
 
   const getStep = (track: HTMLDivElement) => {
     const firstCard = track.children.item(0);
     const secondCard = track.children.item(1);
     if (!firstCard || !secondCard) return 364;
-    return Math.abs(secondCard.getBoundingClientRect().left - firstCard.getBoundingClientRect().left);
+    return Math.abs(
+      secondCard.getBoundingClientRect().left - firstCard.getBoundingClientRect().left,
+    );
   };
 
   const scroll = (next: boolean) => {
@@ -106,27 +114,22 @@ export function ShowcaseServices({ language }: { language: Language }) {
           <div className="services-intro-copy">
             <p className="services-intro-eyebrow">
               <span className="services-intro-dot" aria-hidden="true" />
-              {t("Creative services, made for growth", "خدمات إبداعية تنمّي شغلك")}
+              {copy("serviceIntroEyebrow")}
             </p>
             <h2>
-              {t("Big ideas.", "أفكار كبيرة.")}
+              {copy("serviceIntroTitle")}
               <br />
-              <span>{t("Real impact.", "وتأثير حقيقي.")}</span>
+              <span>{copy("serviceIntroAccent")}</span>
             </h2>
-            <p className="services-intro-description">
-              {t(
-                "From the first spark to the final detail, we bring strategy, creativity and technology together to move your brand forward.",
-                "من أول فكرة لآخر تفصيلة، بنجمع بين الاستراتيجية والإبداع والتكنولوجيا عشان نحرّك علامتك التجارية لقدّام.",
-              )}
-            </p>
+            <p className="services-intro-description">{copy("serviceIntroDescription")}</p>
             <div className="services-intro-actions">
               <a className="services-intro-cta" href="#service-cards">
-                {t("Explore our services", "اكتشف خدماتنا")}
+                {copy("serviceIntroCta")}
                 <ArrowDown aria-hidden="true" />
               </a>
               <span className="services-intro-count">
                 <strong>{String(services.length).padStart(2, "0")}</strong>
-                {t("ways to grow your brand", "خدمات لتنمية علامتك")}
+                {copy("serviceIntroCount")}
               </span>
             </div>
           </div>
@@ -134,16 +137,18 @@ export function ShowcaseServices({ language }: { language: Language }) {
             <div className="services-intro-image-wrap">
               <img
                 className="services-intro-image"
-                src={website.url}
-                alt={t("Creative digital experience designed by Viral Zoom", "تجربة رقمية إبداعية من فايرال زوم")}
+                src={homeCardImage}
+                alt={copy("serviceImageAlt")}
               />
-              <span className="services-image-caption">
-                {t("Strategy meets creativity", "الاستراتيجية تلتقي بالإبداع")}
-              </span>
+              <span className="services-image-caption">{copy("serviceImageCaption")}</span>
             </div>
             <div className="services-image-stamp" aria-hidden="true">
               <span>VZ</span>
-              <span>CREATIVE<br />STUDIO</span>
+              <span>
+                CREATIVE
+                <br />
+                STUDIO
+              </span>
             </div>
           </div>
         </div>
@@ -151,10 +156,10 @@ export function ShowcaseServices({ language }: { language: Language }) {
       <div className="section-inner">
         <div className="section-heading">
           <div>
-            <p className="section-eyebrow">{t("WHAT WE DO", "ماذا نقدم")}</p>
-            <h2 id="services-title">{t("Our Services", "خدماتنا")}</h2>
+            <p className="section-eyebrow">{copy("servicesEyebrow")}</p>
+            <h2 id="services-title">{copy("servicesHeading")}</h2>
             <Link className="services-full-page-link" to="/services">
-              {t("View all services", "شوف كل خدماتنا")}
+              {copy("serviceAll")}
               {ar ? <ChevronLeft aria-hidden="true" /> : <ChevronRight aria-hidden="true" />}
             </Link>
           </div>
@@ -162,8 +167,8 @@ export function ShowcaseServices({ language }: { language: Language }) {
             <Button
               variant="ghost"
               className="arrow-control"
-              title={t("Previous", "السابق")}
-              aria-label={`services ${t("previous", "السابق")}`}
+              title={copy("servicePrevious")}
+              aria-label={copy("servicePrevious")}
               onClick={() => scroll(ar)}
             >
               <ChevronLeft />
@@ -171,8 +176,8 @@ export function ShowcaseServices({ language }: { language: Language }) {
             <Button
               variant="ghost"
               className="arrow-control"
-              title={t("Next", "التالي")}
-              aria-label={`services ${t("next", "التالي")}`}
+              title={copy("serviceNext")}
+              aria-label={copy("serviceNext")}
               onClick={() => scroll(!ar)}
             >
               <ChevronRight />
@@ -184,7 +189,7 @@ export function ShowcaseServices({ language }: { language: Language }) {
         className={`service-track${isDragging ? " is-dragging" : ""}`}
         id="service-cards"
         ref={servicesRef}
-        aria-label={t("Services", "الخدمات")}
+        aria-label={copy("serviceSectionLabel")}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={endPointerDrag}
@@ -203,19 +208,19 @@ export function ShowcaseServices({ language }: { language: Language }) {
         }}
       >
         {services.map((service, index) => (
-          <article className="service-card" key={service.title.en}>
+          <article className="service-card" key={service.id}>
             <img
               className="service-image"
               src={service.image}
-              alt={service.title[language]}
+              alt={service.name[language]}
               loading="lazy"
             />
             <div className="service-number">{String(index + 1).padStart(2, "0")} / VIRAL ZOOM</div>
-            <h3>{service.title[language]}</h3>
+            <h3>{service.name[language]}</h3>
             <p>{service.description[language]}</p>
             <Button variant="link" className="service-more" asChild>
-              <Link to="/services/$slug" params={{ slug: service.slug }}>
-                {t("Read More", "اقرأ المزيد")}
+              <Link to="/services/$slug" params={{ slug: service.id }}>
+                {copy("serviceReadMore")}
                 <ArrowUpRight />
               </Link>
             </Button>

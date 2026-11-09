@@ -1,7 +1,6 @@
 import type { ExternalProject } from "@/lib/projects";
 
-const image = (filename: string) =>
-  `https://starplus.agency/storage/images/portfolios/${filename}`;
+const image = (filename: string) => `/media/portfolio/${filename}`;
 
 export const starPlusProjects: ExternalProject[] = [
   {

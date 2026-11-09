@@ -2,10 +2,10 @@
   "version": 1,
   "asset_id": "41809927-0432-402a-b282-5e697394eec6",
   "project_id": "0687453c-ae9b-4bd8-ae57-adc33c0944a1",
-  "url": "/__l5e/assets-v1/41809927-0432-402a-b282-5e697394eec6/viral-zoom-logo-white.png",
+  "url": "/media/viral-zoom-logo-white.svg",
   "r2_key": "a/v1/0687453c-ae9b-4bd8-ae57-adc33c0944a1/41809927-0432-402a-b282-5e697394eec6/viral-zoom-logo-white.png",
   "original_filename": "viral-zoom-logo-white.png",
   "size": 31866,
-  "content_type": "image/webp",
+  "content_type": "image/svg+xml",
   "created_at": "2026-10-12T13:29:34Z"
 }

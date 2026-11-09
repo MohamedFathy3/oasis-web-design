@@ -2,10 +2,10 @@
   "version": 1,
   "asset_id": "773efe61-8bed-4603-b117-ce229c58fec7",
   "project_id": "0687453c-ae9b-4bd8-ae57-adc33c0944a1",
-  "url": "/__l5e/assets-v1/773efe61-8bed-4603-b117-ce229c58fec7/client-5.jpg",
+  "url": "/media/clients/client-5.svg",
   "r2_key": "a/v1/0687453c-ae9b-4bd8-ae57-adc33c0944a1/773efe61-8bed-4603-b117-ce229c58fec7/client-5.jpg",
   "original_filename": "client-5.jpg",
   "size": 506962,
-  "content_type": "image/jpeg",
+  "content_type": "image/svg+xml",
   "created_at": "2026-10-12T13:30:44Z"
 }

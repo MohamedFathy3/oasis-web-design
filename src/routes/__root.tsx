@@ -13,6 +13,9 @@ import Lenis from "lenis";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { CMSProvider } from "../lib/cms";
+import { loadSiteConfig } from "../lib/cms-loader";
+import { WhatsAppFloatingButton } from "../components/whatsapp-floating-button";
 
 function NotFoundComponent() {
   return (
@@ -79,7 +82,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { property: "og:site_name", content: "Viral Zoom" },
+      { name: "application-name", content: "ViralZoom Agency" },
+      { property: "og:site_name", content: "ViralZoom Agency" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -88,11 +92,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon", sizes: "64x64" },
+      { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "64x64" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" },
     ],
   }),
   shellComponent: RootShell,
+  loader: async () => ({ siteConfig: await loadSiteConfig() }),
+  staleTime: 30_000,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
@@ -102,6 +109,16 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <meta
+          name="google-site-verification"
+          content="wRk08VaVSo0y6TvJe2wYRKKVICIgC9gVM6JlxpvLrAo"
+        />
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              'try { document.documentElement.classList.toggle("dark", localStorage.getItem("viral-zoom-theme") !== "light"); } catch { document.documentElement.classList.add("dark"); }',
+          }}
+        />
         <HeadContent />
       </head>
       <body>
@@ -114,6 +131,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { siteConfig } = Route.useLoaderData();
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -130,8 +148,11 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <CMSProvider serverConfig={siteConfig}>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <WhatsAppFloatingButton />
+      </CMSProvider>
     </QueryClientProvider>
   );
 }

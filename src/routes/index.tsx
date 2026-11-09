@@ -12,43 +12,90 @@ import {
   ShowcaseServices,
 } from "@/components/showcase";
 import type { Language, SectionId } from "@/components/showcase/types";
-import logo from "@/assets/logo.png.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
+import { useCMS } from "@/lib/cms";
+import { absoluteSiteAsset, canonicalUrl } from "@/lib/seo";
+import { loadSiteConfig } from "@/lib/cms-loader";
+
+const HOME_PAGE_TITLE = "ViralZoom Agency";
 
 export const Route = createFileRoute("/")({
   component: Index,
-  head: () => ({
+  loader: async () => ({ siteConfig: await loadSiteConfig() }),
+  head: ({ loaderData }) => ({
+    links: [{ rel: "canonical", href: canonicalUrl("/") }],
     meta: [
-      { title: "Viral Zoom — Creative & Digital Marketing | فايرال زوم" },
+      { title: HOME_PAGE_TITLE },
       {
         name: "description",
-        content:
-          "Explore Viral Zoom's creative and digital services, from brand identity and video production to websites and social media. اكتشف خدمات فايرال زوم الإبداعية والتسويقية.",
+        content: loaderData?.siteConfig.content.pages.home.seoDescription.en,
       },
-      { property: "og:title", content: "Viral Zoom — Creative & Digital Marketing" },
+      { property: "og:title", content: HOME_PAGE_TITLE },
       {
         property: "og:description",
-        content: "Discover our creative services, selected work and brands. اكتشف خدماتنا وأعمالنا وعملاءنا.",
+        content: loaderData?.siteConfig.content.pages.home.seoDescription.en,
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: canonicalUrl("/") },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: HOME_PAGE_TITLE },
+      {
+        name: "twitter:description",
+        content: loaderData?.siteConfig.content.pages.home.seoDescription.en,
+      },
+      {
+        name: "twitter:image",
+        content: absoluteSiteAsset(loaderData?.siteConfig.brand.logo ?? ""),
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: HOME_PAGE_TITLE,
+          alternateName: "ViralZoom",
+          url: canonicalUrl("/"),
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: HOME_PAGE_TITLE,
+          alternateName: "ViralZoom",
+          url: canonicalUrl("/"),
+          email: loaderData?.siteConfig.contact.email,
+          logo: loaderData?.siteConfig.brand.logo,
+          description: loaderData?.siteConfig.content.pages.home.seoDescription.en,
+        }),
+      },
     ],
   }),
 });
 
 function Index() {
+  const { config, ready } = useCMS();
   const [language, setLanguage] = useState<Language>("en");
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
   const [activeSection, setActiveSection] = useState<SectionId>("home");
   const ar = language === "ar";
 
   useEffect(() => {
+    let nextDarkMode = true;
+    let nextLanguage: Language = "en";
     try {
-      setDarkMode(localStorage.getItem("viral-zoom-theme") === "dark");
-      setLanguage(localStorage.getItem("viral-zoom-language") === "ar" ? "ar" : "en");
+      nextDarkMode = localStorage.getItem("viral-zoom-theme") !== "light";
+      nextLanguage = localStorage.getItem("viral-zoom-language") === "ar" ? "ar" : "en";
     } catch {
-      // Keep the default language and light mode when storage is unavailable.
+      // Continue with English and light mode if browser storage is unavailable.
     }
+    document.documentElement.classList.toggle("dark", nextDarkMode);
+    document.documentElement.lang = nextLanguage;
+    document.documentElement.dir = nextLanguage === "ar" ? "rtl" : "ltr";
+    setDarkMode(nextDarkMode);
+    setLanguage(nextLanguage);
   }, []);
 
   useEffect(() => {
@@ -73,10 +120,20 @@ function Index() {
 
   const goTo = (id: SectionId) => {
     document.getElementById(id)?.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
     });
     setActiveSection(id);
   };
+
+  if (!ready)
+    return (
+      <div className="cms-load-gate" role="status">
+        <strong className="cms-load-brand">VZ</strong>
+        <span className="cms-load-spinner" aria-hidden="true" />
+      </div>
+    );
 
   return (
     <div className="site" dir={ar ? "rtl" : "ltr"}>
@@ -98,16 +155,16 @@ function Index() {
       />
       <main>
         <ShowcaseHero language={language} />
-        <ShowcaseServices language={language} />
-        <ShowcasePortfolio language={language} />
-        <ShowcaseClients language={language} />
-        <ShowcaseProcess language={language} />
-        <ShowcaseBanner language={language} />
-        <ShowcaseContact language={language} />
+        {ready && config.sections.services && <ShowcaseServices language={language} />}
+        {ready && config.sections.portfolio && <ShowcasePortfolio language={language} />}
+        {ready && config.sections.clients && <ShowcaseClients language={language} />}
+        {ready && config.sections.process && <ShowcaseProcess language={language} />}
+        {ready && config.sections.banner && <ShowcaseBanner language={language} />}
+        {ready && config.sections.contact && <ShowcaseContact language={language} />}
       </main>
       <ShowcaseFooter
         language={language}
-        logo={darkMode ? whiteLogo.url : logo.url}
+        logo={darkMode ? config.brand.whiteLogo : config.brand.logo}
         onBackToTop={() => goTo("home")}
       />
     </div>

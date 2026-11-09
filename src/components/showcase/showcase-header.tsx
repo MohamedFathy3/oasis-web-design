@@ -2,8 +2,7 @@ import { useState } from "react";
 import { Globe2, Menu, Moon, Sun, X } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/logo.png.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
+import { getPageCopy, useCMS } from "@/lib/cms";
 import type { Language, SectionId } from "./types";
 import { translate } from "./types";
 
@@ -16,13 +15,13 @@ type Props = {
   onLanguageChange: () => void;
 };
 
-const navigation: { id: SectionId | "about"; en: string; ar: string }[] = [
-  { id: "home", en: "HOME", ar: "الرئيسية" },
-  { id: "about", en: "ABOUT", ar: "من نحن" },
-  { id: "contact", en: "CONTACT", ar: "تواصل معنا" },
-  { id: "services", en: "SERVICES", ar: "خدماتنا" },
-  { id: "portfolio", en: "PROJECTS", ar: "مشاريعنا" },
-  { id: "clients", en: "OUR CLIENTS", ar: "عملاؤنا" },
+const navigation: { id: SectionId | "about"; key: string }[] = [
+  { id: "home", key: "navHome" },
+  { id: "about", key: "navAbout" },
+  { id: "contact", key: "navContact" },
+  { id: "services", key: "navServices" },
+  { id: "portfolio", key: "navProjects" },
+  { id: "clients", key: "navClients" },
 ];
 
 export function ShowcaseHeader({
@@ -33,6 +32,7 @@ export function ShowcaseHeader({
   onToggleTheme,
   onLanguageChange,
 }: Props) {
+  const { config } = useCMS();
   const [menuOpen, setMenuOpen] = useState(false);
   const ar = language === "ar";
   const t = (english: string, arabic: string) => translate(language, english, arabic);
@@ -51,11 +51,18 @@ export function ShowcaseHeader({
           aria-label="Viral Zoom home"
           onClick={() => navigate("home")}
         >
-          <img className="brand-logo" src={darkMode ? whiteLogo.url : logo.url} alt="Viral Zoom" />
+          <img
+            className="brand-logo"
+            src={darkMode ? config.brand.whiteLogo : config.brand.logo}
+            alt={config.brand.name}
+          />
         </Button>
         <nav className="desktop-nav" aria-label={t("Main navigation", "القائمة الرئيسية")}>
           {navigation.map((item) =>
-            item.id === "about" || item.id === "contact" || item.id === "services" || item.id === "portfolio" ? (
+            item.id === "about" ||
+            item.id === "contact" ||
+            item.id === "services" ||
+            item.id === "portfolio" ? (
               <Link
                 to={
                   item.id === "about"
@@ -69,16 +76,16 @@ export function ShowcaseHeader({
                 key={item.id}
                 className={`nav-item px-0 ${activeSection === item.id ? "active" : ""}`}
               >
-                {item[language]}
+                {getPageCopy(config, "common", item.key, language)}
               </Link>
             ) : (
               <Button
                 variant="ghost"
                 key={item.id}
                 className={`nav-item px-0 ${activeSection === item.id ? "active" : ""}`}
-                onClick={() => navigate(item.id)}
+                onClick={() => navigate(item.id as SectionId)}
               >
-                {item[language]}
+                {getPageCopy(config, "common", item.key, language)}
               </Button>
             ),
           )}
@@ -90,7 +97,9 @@ export function ShowcaseHeader({
             className="shrink-0"
             onClick={onToggleTheme}
             aria-label={
-              darkMode ? t("Switch to light mode", "تفعيل الوضع الفاتح") : t("Switch to dark mode", "تفعيل الوضع الداكن")
+              darkMode
+                ? t("Switch to light mode", "تفعيل الوضع الفاتح")
+                : t("Switch to dark mode", "تفعيل الوضع الداكن")
             }
             title={darkMode ? t("Light mode", "الوضع الفاتح") : t("Dark mode", "الوضع الداكن")}
             aria-pressed={darkMode}
@@ -121,7 +130,10 @@ export function ShowcaseHeader({
       {menuOpen && (
         <nav className="mobile-nav">
           {navigation.map((item) =>
-            item.id === "about" || item.id === "contact" || item.id === "services" || item.id === "portfolio" ? (
+            item.id === "about" ||
+            item.id === "contact" ||
+            item.id === "services" ||
+            item.id === "portfolio" ? (
               <Link
                 to={
                   item.id === "about"
@@ -136,11 +148,11 @@ export function ShowcaseHeader({
                 className="mobile-nav-link"
                 onClick={() => setMenuOpen(false)}
               >
-                {item[language]}
+                {getPageCopy(config, "common", item.key, language)}
               </Link>
             ) : (
-              <Button key={item.id} variant="ghost" onClick={() => navigate(item.id)}>
-                {item[language]}
+              <Button key={item.id} variant="ghost" onClick={() => navigate(item.id as SectionId)}>
+                {getPageCopy(config, "common", item.key, language)}
               </Button>
             ),
           )}

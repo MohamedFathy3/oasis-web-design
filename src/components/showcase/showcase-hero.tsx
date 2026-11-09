@@ -3,16 +3,14 @@ import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import hero from "@/assets/hero.mp4.asset.json";
 import heroWebm from "@/assets/hero.webm.asset.json";
-import whiteLogo from "@/assets/logo-white.png.asset.json";
-import poster from "@/assets/poster.jpg.asset.json";
 import type { Language } from "./types";
-import { translate } from "./types";
+import { getPageCopy, useCMS } from "@/lib/cms";
 
 export function ShowcaseHero({ language }: { language: Language }) {
+  const { config } = useCMS();
   const [playing, setPlaying] = useState(true);
   const [muted, setMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
 
   const toggleVideo = async () => {
     const video = videoRef.current;
@@ -29,21 +27,26 @@ export function ShowcaseHero({ language }: { language: Language }) {
   };
 
   return (
-    <section className="video-section" aria-label={t("Viral Zoom showreel", "فيديو فايرال زوم")}>
-      <h1 className="sr-only">Viral Zoom — {t("Creative & Digital Marketing", "الإبداع والتسويق الرقمي")}</h1>
+    <section
+      className="video-section"
+      aria-label={getPageCopy(config, "home", "heroLabel", language)}
+    >
+      <h1 className="sr-only">
+        {config.brand.name} — {config.hero.title[language]}
+      </h1>
       <video
         ref={videoRef}
         className="hero-video"
         autoPlay
+        preload="auto"
         muted={muted}
         loop
         playsInline
-        poster={poster.url}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
       >
-        <source src={heroWebm.url} type="video/webm" />
-        <source src={hero.url} type="video/mp4" />
+        {config.hero.video === hero.url ? <source src={heroWebm.url} type="video/webm" /> : null}
+        <source src={config.hero.video || hero.url} type="video/mp4" />
       </video>
       <svg
         className="video-waves"
@@ -65,7 +68,10 @@ export function ShowcaseHero({ language }: { language: Language }) {
           d="M0 60 C320 100 480 180 750 156 C1040 133 1210 65 1440 58 L1440 180 L0 180 Z"
         />
       </svg>
-      <img src={whiteLogo.url} className="video-brand" alt="Viral Zoom" />
+      <div className="hero-copy-overlay">
+        <strong>{config.hero.title[language]}</strong>
+        <span>{config.hero.subtitle[language]}</span>
+      </div>
     </section>
   );
 }

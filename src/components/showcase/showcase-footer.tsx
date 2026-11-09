@@ -1,7 +1,7 @@
 import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Language } from "./types";
-import { translate } from "./types";
+import { getPageCopy, useCMS } from "@/lib/cms";
 
 type Props = {
   language: Language;
@@ -10,15 +10,17 @@ type Props = {
 };
 
 export function ShowcaseFooter({ language, logo, onBackToTop }: Props) {
-  const t = (english: string, arabic: string) => translate(language, english, arabic);
+  const { config } = useCMS();
 
   return (
     <footer className="site-footer">
       <div className="section-inner footer-inner">
         <img className="footer-logo" src={logo} alt="Viral Zoom" />
-        <span>© 2026 Viral Zoom. {t("All rights reserved.", "جميع الحقوق محفوظة.")}</span>
+        <span>
+          © 2026 {config.brand.name}. {getPageCopy(config, "common", "footerCopyright", language)}
+        </span>
         <Button variant="link" className="gap-3 text-xs" onClick={onBackToTop}>
-          {t("Back to top", "إلى أعلى")}
+          {getPageCopy(config, "common", "footerBackToTop", language)}
           <ArrowUpRight />
         </Button>
       </div>

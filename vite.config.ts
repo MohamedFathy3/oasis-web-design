@@ -6,9 +6,20 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-process.env.LOVABLE_PREVIEW_HOST ??= "id-preview--0687453c-ae9b-4bd8-ae57-adc33c0944a1.lovable.app";
+process.env["LOVABLE_PREVIEW_HOST"] ??= "https://viralzoom.agency";
 
 export default defineConfig({
+  nitro: {
+    preset: "node-server",
+  },
+  vite: {
+    server: {
+      allowedHosts: ["viralzoom.agency", "www.viralzoom.agency"],
+    },
+    preview: {
+      allowedHosts: ["viralzoom.agency", "www.viralzoom.agency"],
+    },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

@@ -1,28 +1,22 @@
 # Oasis Web Design
 
-69499e 
-230f41 دي الالوان الاساسيه للويب سايت دما بس خلي ببالك لا bg dark  تمام  بعت ليك الاثنين لوجو علشان هنعلم كمان bg white 
-  السكشن الاول بيتكون من فيديو 
- السشكن الاثاني هتكون الخدمان هتكون اسكرل لعي جنب يامعلم فيها حوالي   بعد كده شكل ال prfile 
- بعد كده لا clinet   بيكون اسكرل يامعلم https://dpmegypt.com/#0 انا عاوز زي الصوره بالبظط وكمان عطيتم يامعلم الويب سايت ال هو refrence  علشان انا عاوز يزه تمام  وكمان عاوز الموقع عربي وانجليزي
+موقع Oasis Web Design ثنائي اللغة (عربي/إنجليزي) مع صفحات ديناميكية وCMS ولوحة إدارة على `/admin`.
 
-This project was built with [Lovable](https://lovable.dev).
+## التقنية
 
-## Build with Lovable
+- React + TanStack Start + Vite
+- Node.js backend من نفس الأصل
+- MySQL لتخزين إعدادات الموقع والخدمات والمشاريع والعملاء
+- رفع الوسائط إلى `DATA_DIR/uploads/`
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/0687453c-ae9b-4bd8-ae57-adc33c0944a1).
+## التشغيل السريع
 
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+```bash
+cp .env.example .env
+npm ci
+mysql -u root -p < database/schema.sql
+mysql -u oasis_web -p oasis_web < database/seed.sql
 npm run dev
 ```
+
+تفاصيل إعداد الإنتاج موجودة في [`BACKEND.md`](./BACKEND.md). ملفات قاعدة البيانات الجاهزة موجودة في [`database/schema.sql`](./database/schema.sql) و[`database/default-site-content.json`](./database/default-site-content.json)، وسكربت تعبئة البيانات في [`scripts/seed-mysql.mjs`](./scripts/seed-mysql.mjs).
